@@ -22,7 +22,7 @@ if false; then
     apt-get update
     apt-get -y dist-upgrade
 
-    useradd --create-home wellsaid-backend || true
+    useradd --create-home wellsaid-backend --shell /bin/bash || true
 
     mkdir -p /home/wellsaid-backend/.ssh
     chmod 0700 /home/wellsaid-backend/.ssh
