@@ -17,7 +17,7 @@ if [ "$IP" == "" ]; then
   fi
 fi
 
-if true; then
+if false; then
   ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
     apt-get update
     apt-get -y dist-upgrade
@@ -50,7 +50,7 @@ if true; then
 EOF
 fi
 
-time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . wellsaid-backend@$IP:/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*/' --exclude='*' --prune-empty-dirs
+time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . wellsaid-backend@$IP:/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*/' --exclude='*' --prune-empty-dirs
 
 ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
   GOPATH=/home/wellsaid-backend/gopath
@@ -61,6 +61,13 @@ ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
   sudo -u wellsaid-backend mkdir -p $GOCACHE
   time sudo -u wellsaid-backend \
     GOROOT=$GOROOT GOPATH=$GOPATH GOCACHE=$GOCACHE $GOROOT/bin/go install ./...
+
+  if [ ! -e /home/wellsaid-backend/db.sqlite3 ]; then
+    $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend/db/1_populate.sh
+    mv $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend/db/db.sqlite3 \
+      /home/wellsaid-backend/db.sqlite3
+    chown wellsaid-backend:wellsaid-backend /home/wellsaid-backend/db.sqlite3
+  fi
 
   tee /etc/systemd/system/wellsaid-backend.service <<EOF2
 [Unit]
@@ -75,6 +82,7 @@ User=wellsaid-backend
 Group=wellsaid-backend
 WorkingDirectory=/home/wellsaid-backend
 Environment=HTTP_PORT=80
+Environment=DB_FILE=/home/wellsaid-backend/db.sqlite3
 ExecStart=/home/wellsaid-backend/wellsaid-backend
 StandardOutput=syslog
 StandardError=syslog
