@@ -9,13 +9,18 @@ import (
 )
 
 func main() {
+	httpPort := os.Getenv("HTTP_PORT")
+	if httpPort == "" {
+		log.Fatalf("Set HTTP_PORT env var")
+	}
+
 	router := mux.NewRouter()
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("This is a catch-all route"))
+		w.Write([]byte("This is a catch-all route\n"))
 	})
-	loggedRouter := handlers.CombinedLoggingHandler(os.Stdout, router)
+	loggedRouter := handlers.CombinedLoggingHandler(os.Stderr, router)
 
-	log.Printf("Listening on :8080...")
-	err := http.ListenAndServe(":8080", loggedRouter)
+	log.Printf("Listening on :" + httpPort + "...")
+	err := http.ListenAndServe(":"+httpPort, loggedRouter)
 	panic(err)
 }

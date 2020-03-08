@@ -1,0 +1,95 @@
+#!/bin/bash -ex
+
+go vet ./...
+go install -v ./...
+
+if [ "$IP" == "" ]; then
+  if false; then
+    doctl compute droplet create wellsaid \
+      --image ubuntu-18-04-x64 --region nyc3 --size s-1vcpu-1gb \
+      --ssh-keys a6:52:93:88:c5:35:fa:72:02:f0:91:24:20:65:b9:c3
+  fi
+
+  IP=`doctl compute droplet list wellsaid --format PublicIPv4 --no-header`
+  if [ "$IP" == "" ]; then
+    echo 1>&2 "Can't find IP address for wellsaid"
+    exit 1
+  fi
+fi
+
+if true; then
+  ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
+    apt-get update
+    apt-get -y dist-upgrade
+
+    useradd --create-home wellsaid-backend || true
+
+    mkdir -p /home/wellsaid-backend/.ssh
+    chmod 0700 /home/wellsaid-backend/.ssh
+    chown wellsaid-backend:wellsaid-backend /home/wellsaid-backend/.ssh
+
+    cp /root/.ssh/authorized_keys /home/wellsaid-backend/.ssh
+    chmod 0600 /home/wellsaid-backend/.ssh/authorized_keys
+    chown wellsaid-backend:wellsaid-backend \
+      /home/wellsaid-backend/.ssh/authorized_keys
+
+    GOROOT=/home/wellsaid-backend/go1.14.linux-amd64
+    if [ ! -e $GOROOT ]; then
+      sudo -u wellsaid-backend curl \
+        -o /home/wellsaid-backend/go1.14.linux-amd64.tar.gz \
+        https://dl.google.com/go/go1.14.linux-amd64.tar.gz
+      cd /home/wellsaid-backend
+      sudo -u wellsaid-backend tar xzf \
+        /home/wellsaid-backend/go1.14.linux-amd64.tar.gz
+      sudo -u wellsaid-backend mv go $GOROOT
+    fi
+
+    GOPATH=/home/wellsaid-backend/gopath
+    sudo -u wellsaid-backend mkdir -p $GOPATH
+    sudo -u wellsaid-backend mkdir -p $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend
+EOF
+fi
+
+time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . wellsaid-backend@$IP:/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*/' --exclude='*' --prune-empty-dirs
+
+ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
+  GOPATH=/home/wellsaid-backend/gopath
+  GOROOT=/home/wellsaid-backend/go1.14.linux-amd64
+  GOCACHE=/home/wellsaid-backend/gocache
+  cd $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend
+  chown -R wellsaid-backend:wellsaid-backend .
+  sudo -u wellsaid-backend mkdir -p $GOCACHE
+  time sudo -u wellsaid-backend \
+    GOROOT=$GOROOT GOPATH=$GOPATH GOCACHE=$GOCACHE $GOROOT/bin/go install ./...
+
+  tee /etc/systemd/system/wellsaid-backend.service <<EOF2
+[Unit]
+Description=wellsaid-backend service
+After=network.target
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=1
+User=wellsaid-backend
+Group=wellsaid-backend
+WorkingDirectory=/home/wellsaid-backend
+Environment=HTTP_PORT=80
+ExecStart=/home/wellsaid-backend/wellsaid-backend
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
+EOF2
+  sudo systemctl daemon-reload
+
+  sudo service wellsaid-backend stop || true
+  sudo -u wellsaid-backend cp -rv $GOPATH/bin/wellsaid-backend \
+    /home/wellsaid-backend
+  setcap CAP_NET_BIND_SERVICE=+eip /home/wellsaid-backend/wellsaid-backend
+  sudo systemctl enable wellsaid-backend
+  sudo systemctl start wellsaid-backend
+  sleep 1
+  curl http://localhost:80
+EOF
