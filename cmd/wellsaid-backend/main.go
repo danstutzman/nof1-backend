@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request, statusCode, size int) {
+func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
+	statusCode, size int) db.RequestsRow {
 
 	var tlsProtocol null.String
 	var tlsCipher null.String
@@ -21,7 +22,7 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request, statusCod
 		tlsCipher = null.StringFrom(tls.CipherSuiteName(r.TLS.CipherSuite))
 	}
 
-	db.InsertIntoRequests(dbConn, db.RequestsRow{
+	return db.InsertIntoRequests(dbConn, db.RequestsRow{
 		ReceivedAt:  receivedAt,
 		RemoteAddr:  r.RemoteAddr,
 		UserAgent:   r.UserAgent(),
@@ -37,18 +38,104 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request, statusCod
 	})
 }
 
-func handleIndex(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
 
-	log.Printf("protocol=%s", r.TLS.NegotiatedProtocol)
+	html := `<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <title>Well Said</title>
+  </head>
+  <body>
+		Loaded.
+	  <script>
+		  var xhr = new XMLHttpRequest()
+      xhr.open('POST', '/capabilities', true)
+			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+      xhr.send('a=b' +
+				'&nacn=' + encodeURIComponent(navigator.appCodeName) +
+				'&nan=' + encodeURIComponent(navigator.appName) +
+				'&nav=' + encodeURIComponent(navigator.appVersion) +
+				'&nce=' + encodeURIComponent(navigator.cookieEnabled) +
+				'&nl=' + encodeURIComponent(navigator.language) +
+				'&nls=' + encodeURIComponent(navigator.languages) +
+				'&np=' + encodeURIComponent(navigator.platform) +
+				'&no=' + encodeURIComponent(navigator.oscpu) +
+				'&nua=' + encodeURIComponent(navigator.userAgent) +
+				'&nv=' + encodeURIComponent(navigator.vendor) +
+				'&nvs=' + encodeURIComponent(navigator.vendorSub) +
+				'&sw=' + screen.width +
+				'&sh=' + screen.height +
+				'&wiw=' + window.innerWidth +
+        '&wih=' + window.innerHeight +
+				'&dbcw=' + document.body.clientWidth +
+				'&dbch=' + document.body.clientHeight +
+				'&ddecw=' + document.documentElement.clientWidth +
+				'&ddech=' + document.documentElement.clientHeight +
+				'&wsaw=' + window.screen.availWidth +
+				'&wsah=' + window.screen.availHeight +
+				'&wdpr=' + window.devicePixelRatio +
+				'&ddeots=' + ('ontouchstart' in document.documentElement)
+			)
+		</script>
+  </body>
+</html>
+`
+	w.Write([]byte(html))
 
-	output := "This is a catch-all route\n"
-	w.Write([]byte(output))
-
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(output))
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html))
 }
 
-func handleNotFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+func param(r *http.Request, key string) null.String {
+	values := r.Form[key]
+	if len(values) == 1 {
+		return null.StringFrom(values[0])
+	} else {
+		return null.String{}
+	}
+}
+
+func postCapabilities(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+	receivedAt := time.Now().UTC()
+
+	w.Write([]byte("OK"))
+
+	requestLog := logRequest(dbConn, receivedAt, r, http.StatusOK, len("OK"))
+
+	err := r.ParseForm()
+	if err != nil {
+		panic(err)
+	}
+	db.InsertIntoCapabilities(dbConn, db.CapabilitiesRow{
+		RequestId:               requestLog.Id,
+		NavigatorAppCodeName:    param(r, "nacn"),
+		NavigatorAppName:        param(r, "nan"),
+		NavigatorAppVersion:     param(r, "nav"),
+		NavigatorCookieEnabled:  param(r, "nce"),
+		NavigatorLanguage:       param(r, "nl"),
+		NavigatorLanguages:      param(r, "nls"),
+		NavigatorPlatform:       param(r, "np"),
+		NavigatorOscpu:          param(r, "no"),
+		NavigatorUserAgent:      param(r, "nua"),
+		NavigatorVendor:         param(r, "nv"),
+		NavigatorVendorSub:      param(r, "nvs"),
+		ScreenWidth:             param(r, "sw"),
+		ScreenHeight:            param(r, "sh"),
+		WindowInnerWidth:        param(r, "wiw"),
+		WindowInnerHeight:       param(r, "wih"),
+		DocBodyClientWidth:      param(r, "dbcw"),
+		DocBodyClientHeight:     param(r, "dbch"),
+		DocElementClientWidth:   param(r, "ddecw"),
+		DocElementClientHeight:  param(r, "ddech"),
+		WindowScreenAvailWidth:  param(r, "wsaw"),
+		WindowScreenAvailHeight: param(r, "wsah"),
+		WindowDevicePixelRatio:  param(r, "wdpr"),
+		HasOnTouchStart:         param(r, "ddeots"),
+	})
+}
+
+func notFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
 
 	output := "Not found\n"
@@ -57,7 +144,7 @@ func handleNotFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	logRequest(dbConn, receivedAt, r, http.StatusNotFound, len(output))
 }
 
-func handleRedirectToTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+func getWithoutTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
@@ -84,11 +171,15 @@ func main() {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			handleNotFound(w, r, dbConn)
+			notFound(w, r, dbConn)
 		})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		handleIndex(w, r, dbConn)
+		getRoot(w, r, dbConn)
 	})
+	router.HandleFunc("/capabilities",
+		func(w http.ResponseWriter, r *http.Request) {
+			postCapabilities(w, r, dbConn)
+		})
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
 		log.Printf("Serving TLS on :443 and HTTP on :" + httpPort + "...")
@@ -101,7 +192,7 @@ func main() {
 		redirectToTlsRouter := mux.NewRouter()
 		redirectToTlsRouter.NotFoundHandler = http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				handleRedirectToTls(w, r, dbConn)
+				getWithoutTls(w, r, dbConn)
 			})
 		err := http.ListenAndServe(":"+httpPort, redirectToTlsRouter)
 		panic(err)
