@@ -17,10 +17,19 @@ if [ "$IP" == "" ]; then
   fi
 fi
 
+# Only needs performed one time
 if false; then
   ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
     apt-get update
     apt-get -y dist-upgrade
+
+    # Install LetsEncrypt Certbot
+    apt-get install software-properties-common
+    add-apt-repository -y universe
+    add-apt-repository -y ppa:certbot/certbot
+    apt-get update
+    apt-get install -y certbot
+    certbot certonly --standalone --agree-tos --email dan@danstutzman.com --no-eff-email -d wellsaid.us
 
     useradd --create-home wellsaid-backend --shell /bin/bash || true
 
@@ -78,11 +87,11 @@ After=network.target
 Type=simple
 Restart=on-failure
 RestartSec=1
-User=wellsaid-backend
-Group=wellsaid-backend
 WorkingDirectory=/home/wellsaid-backend
 Environment=HTTP_PORT=80
 Environment=DB_FILE=/home/wellsaid-backend/db.sqlite3
+Environment=HTTPS_CERT_FILE=/etc/letsencrypt/live/wellsaid.us/fullchain.pem
+Environment=HTTPS_KEY_FILE=/etc/letsencrypt/live/wellsaid.us/privkey.pem
 ExecStart=/home/wellsaid-backend/wellsaid-backend
 StandardOutput=syslog
 StandardError=syslog
@@ -99,5 +108,5 @@ EOF2
   sudo systemctl enable wellsaid-backend
   sudo systemctl start wellsaid-backend
   sleep 1
-  curl http://localhost:80
+  curl https://wellsaid.us
 EOF
