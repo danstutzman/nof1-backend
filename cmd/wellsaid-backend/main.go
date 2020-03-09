@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	"gopkg.in/guregu/null.v3"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -38,53 +39,30 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 	})
 }
 
-func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
+	staticDir string) {
 	receivedAt := time.Now().UTC()
 
-	html := `<!DOCTYPE html>
-<html lang='en'>
-  <head>
-    <meta charset='utf-8'>
-    <title>Well Said</title>
-  </head>
-  <body>
-		Loaded.
-	  <script>
-		  var xhr = new XMLHttpRequest()
-      xhr.open('POST', '/capabilities', true)
-			xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
-      xhr.send('a=b' +
-				'&nacn=' + encodeURIComponent(navigator.appCodeName) +
-				'&nan=' + encodeURIComponent(navigator.appName) +
-				'&nav=' + encodeURIComponent(navigator.appVersion) +
-				'&nce=' + encodeURIComponent(navigator.cookieEnabled) +
-				'&nl=' + encodeURIComponent(navigator.language) +
-				'&nls=' + encodeURIComponent(navigator.languages) +
-				'&np=' + encodeURIComponent(navigator.platform) +
-				'&no=' + encodeURIComponent(navigator.oscpu) +
-				'&nua=' + encodeURIComponent(navigator.userAgent) +
-				'&nv=' + encodeURIComponent(navigator.vendor) +
-				'&nvs=' + encodeURIComponent(navigator.vendorSub) +
-				'&sw=' + screen.width +
-				'&sh=' + screen.height +
-				'&wiw=' + window.innerWidth +
-        '&wih=' + window.innerHeight +
-				'&dbcw=' + document.body.clientWidth +
-				'&dbch=' + document.body.clientHeight +
-				'&ddecw=' + document.documentElement.clientWidth +
-				'&ddech=' + document.documentElement.clientHeight +
-				'&wsaw=' + window.screen.availWidth +
-				'&wsah=' + window.screen.availHeight +
-				'&wdpr=' + window.devicePixelRatio +
-				'&ddeots=' + ('ontouchstart' in document.documentElement)
-			)
-		</script>
-  </body>
-</html>
-`
+	html, err := ioutil.ReadFile(staticDir + "/index.html")
+	if err != nil {
+		panic(err)
+	}
 	w.Write([]byte(html))
 
 	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html))
+}
+
+func getAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
+	staticDir string) {
+	receivedAt := time.Now().UTC()
+
+	mp3, err := ioutil.ReadFile(staticDir + r.URL.RequestURI())
+	if err != nil {
+		panic(err)
+	}
+	w.Write([]byte(mp3))
+
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(mp3))
 }
 
 func param(r *http.Request, key string) null.String {
@@ -164,9 +142,14 @@ func main() {
 
 	dbFile := os.Getenv("DB_FILE")
 	if dbFile == "" {
-		log.Fatalf("Set DB_FILE env var.")
+		log.Fatalf("Set DB_FILE env var")
 	}
 	dbConn := db.InitDb(dbFile)
+
+	staticDir := os.Getenv("STATIC_DIR")
+	if staticDir == "" {
+		log.Fatalf("Set STATIC_DIR env var")
+	}
 
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
@@ -174,8 +157,12 @@ func main() {
 			notFound(w, r, dbConn)
 		})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getRoot(w, r, dbConn)
+		getRoot(w, r, dbConn, staticDir)
 	})
+	router.HandleFunc("/{prefix}.mp3",
+		func(w http.ResponseWriter, r *http.Request) {
+			getAudio(w, r, dbConn, staticDir)
+		})
 	router.HandleFunc("/capabilities",
 		func(w http.ResponseWriter, r *http.Request) {
 			postCapabilities(w, r, dbConn)

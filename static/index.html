@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang='en'>
+  <head>
+    <meta charset='utf-8'>
+    <title>Well Said</title>
+  </head>
+  <body>
+    <a style='font-size: 40pt' href="/beat.mp3">beat.mp3</a><br/>
+    <button style='font-size: 40pt' onClick="document.getElementById('beat').load(); document.getElementById('beat').play()">play</button>
+    <button style='font-size: 40pt' onClick="document.getElementById('beat').load()">load</button>
+    <audio id='beat'>
+      <source src="/beat.mp3" type="audio/mpeg" />
+      Your browser does not support the audio element.
+    </audio>
+
+    <script>
+      var xhr = new XMLHttpRequest()
+      xhr.open('POST', '/capabilities', true)
+      xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded')
+      xhr.send('a=b' +
+        '&nacn=' + encodeURIComponent(navigator.appCodeName) +
+        '&nan=' + encodeURIComponent(navigator.appName) +
+        '&nav=' + encodeURIComponent(navigator.appVersion) +
+        '&nce=' + encodeURIComponent(navigator.cookieEnabled) +
+        '&nl=' + encodeURIComponent(navigator.language) +
+        '&nls=' + encodeURIComponent(navigator.languages) +
+        '&np=' + encodeURIComponent(navigator.platform) +
+        '&no=' + encodeURIComponent(navigator.oscpu) +
+        '&nua=' + encodeURIComponent(navigator.userAgent) +
+        '&nv=' + encodeURIComponent(navigator.vendor) +
+        '&nvs=' + encodeURIComponent(navigator.vendorSub) +
+        '&sw=' + screen.width +
+        '&sh=' + screen.height +
+        '&wiw=' + window.innerWidth +
+        '&wih=' + window.innerHeight +
+        '&dbcw=' + document.body.clientWidth +
+        '&dbch=' + document.body.clientHeight +
+        '&ddecw=' + document.documentElement.clientWidth +
+        '&ddech=' + document.documentElement.clientHeight +
+        '&wsaw=' + window.screen.availWidth +
+        '&wsah=' + window.screen.availHeight +
+        '&wdpr=' + window.devicePixelRatio +
+        '&ddeots=' + ('ontouchstart' in document.documentElement)
+      )
+    </script>
+  </body>
+</html>
