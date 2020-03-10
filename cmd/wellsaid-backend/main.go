@@ -52,17 +52,17 @@ func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html))
 }
 
-func getAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
+func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	staticDir string) {
 	receivedAt := time.Now().UTC()
 
-	mp3, err := ioutil.ReadFile(staticDir + r.URL.RequestURI())
+	bytes, err := ioutil.ReadFile(staticDir + r.URL.RequestURI())
 	if err != nil {
 		panic(err)
 	}
-	w.Write([]byte(mp3))
+	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(mp3))
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes))
 }
 
 func param(r *http.Request, key string) null.String {
@@ -161,11 +161,19 @@ func main() {
 	})
 	router.HandleFunc("/{prefix}.mp3",
 		func(w http.ResponseWriter, r *http.Request) {
-			getAudio(w, r, dbConn, staticDir)
+			getStaticFile(w, r, dbConn, staticDir)
 		})
 	router.HandleFunc("/capabilities",
 		func(w http.ResponseWriter, r *http.Request) {
 			postCapabilities(w, r, dbConn)
+		})
+	router.HandleFunc("/bundle.js",
+		func(w http.ResponseWriter, r *http.Request) {
+			getStaticFile(w, r, dbConn, staticDir)
+		})
+	router.HandleFunc("/bundle.js.map",
+		func(w http.ResponseWriter, r *http.Request) {
+			getStaticFile(w, r, dbConn, staticDir)
 		})
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
