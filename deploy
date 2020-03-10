@@ -109,5 +109,6 @@ EOF2
   sudo systemctl enable wellsaid-backend
   sudo systemctl start wellsaid-backend
   sleep 1
-  curl https://wellsaid.us
+
+  curl --silent --show-error -o /dev/null https://wellsaid.us
 EOF
