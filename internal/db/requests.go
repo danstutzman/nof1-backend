@@ -22,13 +22,14 @@ type RequestsRow struct {
 	DurationMs  int
 	StatusCode  int
 	Size        int
+	ErrorStack  null.String
 }
 
 func assertRequestsHasCorrectSchema(db *sql.DB) {
 	query := `SELECT id, received_at, remote_addr, user_agent, referer,
 	    http_version, tls_protocol, tls_cipher,
   	  method, path,
-			duration_ms, status_code, size
+			duration_ms, status_code, size, error_stack
 	  FROM requests LIMIT 1`
 	if LOG {
 		log.Println(query)
@@ -45,11 +46,11 @@ func InsertIntoRequests(db *sql.DB, row RequestsRow) RequestsRow {
     (received_at, remote_addr, user_agent, referer,
 		 http_version, tls_protocol, tls_cipher,
 		 method, path,
-		 duration_ms, status_code, size)
+		 duration_ms, status_code, size, error_stack)
     VALUES (%s, %s, %s, %s,
 		 %s, %s, %s,
 		 %s, %s,
-		 %d, %d, %d)`,
+		 %d, %d, %d, %s)`,
 		EscapeNanoTime(row.ReceivedAt),
 		EscapeString(row.RemoteAddr),
 		EscapeString(row.UserAgent),
@@ -61,7 +62,8 @@ func InsertIntoRequests(db *sql.DB, row RequestsRow) RequestsRow {
 		EscapeString(row.Path),
 		row.DurationMs,
 		row.StatusCode,
-		row.Size)
+		row.Size,
+		EscapeNullString(row.ErrorStack))
 	if LOG {
 		log.Println(query)
 	}

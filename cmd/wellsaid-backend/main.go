@@ -15,7 +15,7 @@ import (
 )
 
 func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
-	statusCode, size int) db.RequestsRow {
+	statusCode, size int, errorStack null.String) db.RequestsRow {
 
 	var tlsProtocol null.String
 	var tlsCipher null.String
@@ -37,6 +37,7 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 		DurationMs:  int(time.Now().UTC().Sub(receivedAt).Milliseconds()),
 		StatusCode:  statusCode,
 		Size:        size,
+		ErrorStack:  errorStack,
 	})
 }
 
@@ -53,7 +54,7 @@ func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	}
 	w.Write([]byte(html))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html))
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html), null.String{})
 }
 
 func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
@@ -69,7 +70,7 @@ func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	}
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes))
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{})
 }
 
 func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
@@ -93,7 +94,7 @@ func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	bytes := "OK"
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes))
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{})
 }
 
 func param(r *http.Request, key string) null.String {
@@ -110,7 +111,8 @@ func postCapabilities(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 
 	w.Write([]byte("OK"))
 
-	requestLog := logRequest(dbConn, receivedAt, r, http.StatusOK, len("OK"))
+	requestLog := logRequest(
+		dbConn, receivedAt, r, http.StatusOK, len("OK"), null.String{})
 
 	err := r.ParseForm()
 	if err != nil {
@@ -150,7 +152,7 @@ func notFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
 	logRequest(dbConn, receivedAt, r, http.StatusNotFound,
-		len(http.StatusText(http.StatusNotFound)))
+		len(http.StatusText(http.StatusNotFound)), null.String{})
 }
 
 func getWithoutTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
@@ -159,7 +161,8 @@ func getWithoutTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)
 
-	logRequest(dbConn, receivedAt, r, http.StatusMovedPermanently, 0)
+	logRequest(
+		dbConn, receivedAt, r, http.StatusMovedPermanently, 0, null.String{})
 }
 
 func main() {
@@ -215,7 +218,8 @@ func main() {
 		log.Printf("Serving TLS on :443 and HTTP on :" + httpPort + "...")
 
 		go func() {
-			err := http.ListenAndServeTLS(":443", httpsCertFile, httpsKeyFile, router)
+			err := http.ListenAndServeTLS(":443", httpsCertFile, httpsKeyFile,
+				newRecoveryHandler(router, dbConn))
 			panic(err)
 		}()
 
@@ -224,11 +228,12 @@ func main() {
 			func(w http.ResponseWriter, r *http.Request) {
 				getWithoutTls(w, r, dbConn)
 			})
-		err := http.ListenAndServe(":"+httpPort, redirectToTlsRouter)
+		err := http.ListenAndServe(":"+httpPort,
+			newRecoveryHandler(redirectToTlsRouter, dbConn))
 		panic(err)
 	} else {
 		log.Printf("Serving HTTP on :" + httpPort + "...")
-		err := http.ListenAndServe(":"+httpPort, router)
+		err := http.ListenAndServe(":"+httpPort, newRecoveryHandler(router, dbConn))
 		panic(err)
 	}
 }

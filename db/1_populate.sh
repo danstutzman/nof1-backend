@@ -17,7 +17,8 @@ sqlite3 db.sqlite3 <<EOF
     path         TEXT NOT NULL,
     duration_ms  INTEGER NOT NULL,
     status_code  INTEGER NOT NULL,
-    size         INTEGER NOT NULL
+    size         INTEGER NOT NULL,
+    error_stack  TEXT
   );
 
   DROP TABLE IF EXISTS capabilities;
