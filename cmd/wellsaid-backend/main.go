@@ -45,7 +45,10 @@ func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	receivedAt := time.Now().UTC()
 
 	html, err := ioutil.ReadFile(staticDir + "/index.html")
-	if err != nil {
+	if os.IsNotExist(err) {
+		notFound(w, r, dbConn)
+		return
+	} else if err != nil {
 		panic(err)
 	}
 	w.Write([]byte(html))
@@ -58,7 +61,10 @@ func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	receivedAt := time.Now().UTC()
 
 	bytes, err := ioutil.ReadFile(staticDir + r.URL.RequestURI())
-	if err != nil {
+	if os.IsNotExist(err) {
+		notFound(w, r, dbConn)
+		return
+	} else if err != nil {
 		panic(err)
 	}
 	w.Write([]byte(bytes))
@@ -141,10 +147,10 @@ func postCapabilities(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 func notFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
 
-	output := "Not found\n"
-	w.Write([]byte(output))
+	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
-	logRequest(dbConn, receivedAt, r, http.StatusNotFound, len(output))
+	logRequest(dbConn, receivedAt, r, http.StatusNotFound,
+		len(http.StatusText(http.StatusNotFound)))
 }
 
 func getWithoutTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
