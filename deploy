@@ -59,7 +59,7 @@ if false; then
 EOF
 fi
 
-time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . wellsaid-backend@$IP:/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='*/' --exclude='*' --prune-empty-dirs
+time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . wellsaid-backend@$IP:/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='bundle.js' --include='bundle.js.map' --include='*/' --exclude='*' --prune-empty-dirs
 
 ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
   GOPATH=/home/wellsaid-backend/gopath

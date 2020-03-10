@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"github.com/gorilla/mux"
 	"gopkg.in/guregu/null.v3"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -60,6 +61,30 @@ func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	if err != nil {
 		panic(err)
 	}
+	w.Write([]byte(bytes))
+
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes))
+}
+
+func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+	receivedAt := time.Now().UTC()
+
+	r.ParseMultipartForm(32 << 20)
+	file, handler, err := r.FormFile("audio_data")
+	if err != nil {
+		panic(err)
+	}
+	defer file.Close()
+	log.Printf("Header: %v", handler.Header)
+
+	f, err := os.OpenFile("/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
+	if err != nil {
+		panic(err)
+	}
+	defer f.Close()
+	io.Copy(f, file)
+
+	bytes := "OK"
 	w.Write([]byte(bytes))
 
 	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes))
@@ -174,6 +199,10 @@ func main() {
 	router.HandleFunc("/bundle.js.map",
 		func(w http.ResponseWriter, r *http.Request) {
 			getStaticFile(w, r, dbConn, staticDir)
+		})
+	router.HandleFunc("/upload-audio",
+		func(w http.ResponseWriter, r *http.Request) {
+			postUploadAudio(w, r, dbConn)
 		})
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
