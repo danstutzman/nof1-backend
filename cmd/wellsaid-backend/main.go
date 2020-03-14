@@ -177,14 +177,14 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	var errorMessage null.String
 	var errorStack null.String
 	if clientLog["error"] != nil {
-		if errorMap, ok := clientLog["error"].(map[string]string); ok {
-			if s, ok := errorMap["name"]; ok {
+		if errorMap, ok := clientLog["error"].(map[string]interface{}); ok {
+			if s, ok := errorMap["name"].(string); ok {
 				errorName = null.StringFrom(s)
 			}
-			if s, ok := errorMap["message"]; ok {
+			if s, ok := errorMap["message"].(string); ok {
 				errorMessage = null.StringFrom(s)
 			}
-			if s, ok := errorMap["stack"]; ok {
+			if s, ok := errorMap["stack"].(string); ok {
 				errorStack = null.StringFrom(s)
 			}
 			delete(clientLog, "error")
