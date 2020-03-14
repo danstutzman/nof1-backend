@@ -61,4 +61,16 @@ sqlite3 db.sqlite3 <<EOF
     has_on_touch_start            TEXT
   );
 
+  DROP TABLE IF EXISTS logs;
+  CREATE TABLE logs (
+    id                 INTEGER PRIMARY KEY NOT NULL,
+    browser_id         INTEGER NOT NULL,
+    id_on_client       INTEGER NOT NULL,
+    time_on_client     INTEGER NOT NULL,
+    message            TEXT NOT NULL,
+    error_name         TEXT,
+    error_message      TEXT,
+    error_stack        TEXT,
+    other_details_json TEXT
+  );
 EOF

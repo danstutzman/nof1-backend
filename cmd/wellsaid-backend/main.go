@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
 	"crypto/tls"
 	"database/sql"
+	"encoding/json"
 	"github.com/gorilla/mux"
 	"gopkg.in/guregu/null.v3"
 	"io"
@@ -14,6 +15,16 @@ import (
 	"strconv"
 	"time"
 )
+
+type SyncRequest struct {
+	Logs []map[string]interface{}
+}
+
+func setCORSHeaders(w http.ResponseWriter) {
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods",
+		"DELETE, GET, PATCH, POST, PUT")
+}
 
 func getBrowserIdCookie(w http.ResponseWriter, r *http.Request) int {
 	cookie, err := r.Cookie("browser-id")
@@ -63,6 +74,8 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 		tlsProtocol = null.StringFrom(r.TLS.NegotiatedProtocol)
 		tlsCipher = null.StringFrom(tls.CipherSuiteName(r.TLS.CipherSuite))
 	}
+
+	log.Printf("%s %s\n", r.Method, r.URL.RequestURI())
 
 	return db.InsertIntoRequests(dbConn, db.RequestsRow{
 		ReceivedAt:  receivedAt,
@@ -136,6 +149,92 @@ func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	io.Copy(f, file)
 
 	bytes := "OK"
+	w.Write([]byte(bytes))
+
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
+		browserId)
+}
+
+func convertClientLogToLogsRow(clientLog map[string]interface{},
+	browserId int) db.LogsRow {
+
+	var idOnClient int
+	if f, ok := clientLog["id"].(float64); ok {
+		idOnClient = int(f)
+	}
+	delete(clientLog, "id")
+
+	var timeOnClient int
+	if f, ok := clientLog["time"].(float64); ok {
+		timeOnClient = int(f)
+	}
+	delete(clientLog, "time")
+
+	message := clientLog["message"].(string)
+	delete(clientLog, "message")
+
+	var errorName null.String
+	var errorMessage null.String
+	var errorStack null.String
+	if clientLog["error"] != nil {
+		if errorMap, ok := clientLog["error"].(map[string]string); ok {
+			if s, ok := errorMap["name"]; ok {
+				errorName = null.StringFrom(s)
+			}
+			if s, ok := errorMap["message"]; ok {
+				errorMessage = null.StringFrom(s)
+			}
+			if s, ok := errorMap["stack"]; ok {
+				errorStack = null.StringFrom(s)
+			}
+			delete(clientLog, "error")
+		}
+	}
+
+	var otherDetailsJson null.String
+	if len(clientLog) > 0 {
+		json, err := json.Marshal(clientLog)
+		if err != nil {
+			panic(err)
+		}
+		otherDetailsJson = null.StringFrom(string(json))
+	}
+
+	return db.LogsRow{
+		BrowserId:        browserId,
+		IdOnClient:       idOnClient,
+		TimeOnClient:     timeOnClient,
+		Message:          message,
+		ErrorName:        errorName,
+		ErrorMessage:     errorMessage,
+		ErrorStack:       errorStack,
+		OtherDetailsJson: otherDetailsJson,
+	}
+}
+
+func postSync(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
+	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
+	setCORSHeaders(w)
+	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
+
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Body.Close()
+
+	var syncRequest SyncRequest
+	err = json.Unmarshal(body, &syncRequest)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, clientLog := range syncRequest.Logs {
+		db.InsertIntoLogs(dbConn, convertClientLogToLogsRow(clientLog, browserId))
+	}
+
+	bytes := "{}"
 	w.Write([]byte(bytes))
 
 	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
@@ -261,6 +360,10 @@ func main() {
 	router.HandleFunc("/upload-audio",
 		func(w http.ResponseWriter, r *http.Request) {
 			postUploadAudio(w, r, dbConn)
+		})
+	router.HandleFunc("/sync",
+		func(w http.ResponseWriter, r *http.Request) {
+			postSync(w, r, dbConn)
 		})
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
