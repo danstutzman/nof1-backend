@@ -69,7 +69,8 @@ ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
   chown -R wellsaid-backend:wellsaid-backend .
   sudo -u wellsaid-backend mkdir -p $GOCACHE
   time sudo -u wellsaid-backend \
-    GOROOT=$GOROOT GOPATH=$GOPATH GOCACHE=$GOCACHE $GOROOT/bin/go install ./...
+    GOROOT=$GOROOT GOPATH=$GOPATH GOCACHE=$GOCACHE \
+    $GOROOT/bin/go install -v -race ./...
 
   if [ ! -e /home/wellsaid-backend/db.sqlite3 ]; then
     $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend/db/1_populate.sh

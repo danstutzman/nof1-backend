@@ -2,7 +2,7 @@
 
 ```
 go vet -v ./... && 
-  go install -v ./... && 
+  go install -race -v ./... && 
   HTTP_PORT=8080 DB_FILE=db/db.sqlite3 STATIC_DIR=static wellsaid-backend
 ```
 
