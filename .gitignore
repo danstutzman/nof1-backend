@@ -3,3 +3,4 @@
 /static/bundle.js.map
 /static/index.html
 /static/bundle.js.tmp*
+.*.swp
