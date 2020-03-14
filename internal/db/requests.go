@@ -12,8 +12,7 @@ type RequestsRow struct {
 	Id          int
 	ReceivedAt  time.Time
 	RemoteAddr  string
-	UserAgent   string
-	Referer     string
+	BrowserId   int
 	HttpVersion string
 	TlsProtocol null.String
 	TlsCipher   null.String
@@ -26,7 +25,7 @@ type RequestsRow struct {
 }
 
 func assertRequestsHasCorrectSchema(db *sql.DB) {
-	query := `SELECT id, received_at, remote_addr, user_agent, referer,
+	query := `SELECT id, received_at, remote_addr, browser_id
 	    http_version, tls_protocol, tls_cipher,
   	  method, path,
 			duration_ms, status_code, size, error_stack
@@ -43,18 +42,17 @@ func assertRequestsHasCorrectSchema(db *sql.DB) {
 
 func InsertIntoRequests(db *sql.DB, row RequestsRow) RequestsRow {
 	query := fmt.Sprintf(`INSERT INTO requests
-    (received_at, remote_addr, user_agent, referer,
+    (received_at, remote_addr, browser_id,
 		 http_version, tls_protocol, tls_cipher,
 		 method, path,
 		 duration_ms, status_code, size, error_stack)
-    VALUES (%s, %s, %s, %s,
+    VALUES (%s, %s, %d,
 		 %s, %s, %s,
 		 %s, %s,
 		 %d, %d, %d, %s)`,
 		EscapeNanoTime(row.ReceivedAt),
 		EscapeString(row.RemoteAddr),
-		EscapeString(row.UserAgent),
-		EscapeString(row.Referer),
+		row.BrowserId,
 		EscapeString(row.HttpVersion),
 		EscapeNullString(row.TlsProtocol),
 		EscapeNullString(row.TlsCipher),

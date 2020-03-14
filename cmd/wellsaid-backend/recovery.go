@@ -21,14 +21,16 @@ func newRecoveryHandler(safeHandler http.Handler, dbConn *sql.DB) http.Handler {
 
 func (h recoveryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
 
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Fprintln(os.Stderr, errors.Wrap(err, 2).ErrorStack())
 
 			w.WriteHeader(http.StatusInternalServerError)
+
 			logRequest(h.dbConn, receivedAt, r, http.StatusInternalServerError, 0,
-				null.StringFrom(errors.Wrap(err, 2).ErrorStack()))
+				null.StringFrom(errors.Wrap(err, 2).ErrorStack()), browserId)
 		}
 	}()
 

@@ -11,11 +11,51 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 )
 
+func getBrowserIdCookie(w http.ResponseWriter, r *http.Request) int {
+	cookie, err := r.Cookie("browser-id")
+	if err == nil {
+		browserId, _ := strconv.Atoi(cookie.Value)
+		return browserId
+	} else if err == http.ErrNoCookie {
+		return 0
+	} else {
+		panic(err)
+	}
+}
+
+func getOrSetBrowserIdCookie(w http.ResponseWriter, r *http.Request,
+	dbConn *sql.DB) int {
+	cookie, err := r.Cookie("browser-id")
+	if err == nil {
+		browserId, _ := strconv.Atoi(cookie.Value)
+		return browserId
+	} else if err == http.ErrNoCookie {
+		browser := db.InsertIntoBrowsers(dbConn, db.BrowsersRow{
+			UserAgent:      r.UserAgent(),
+			Accept:         r.Header.Get("Accept"),
+			AcceptEncoding: r.Header.Get("Accept-Encoding"),
+			AcceptLanguage: r.Header.Get("Accept-Language"),
+			Referer:        r.Referer(),
+		})
+
+		http.SetCookie(w, &http.Cookie{
+			Name:    "browser-id",
+			Value:   strconv.Itoa(browser.Id),
+			Expires: time.Now().AddDate(0, 0, 1),
+		})
+
+		return browser.Id
+	} else {
+		panic(err)
+	}
+}
+
 func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
-	statusCode, size int, errorStack null.String) db.RequestsRow {
+	statusCode, size int, errorStack null.String, browserId int) db.RequestsRow {
 
 	var tlsProtocol null.String
 	var tlsCipher null.String
@@ -27,8 +67,7 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 	return db.InsertIntoRequests(dbConn, db.RequestsRow{
 		ReceivedAt:  receivedAt,
 		RemoteAddr:  r.RemoteAddr,
-		UserAgent:   r.UserAgent(),
-		Referer:     r.Referer(),
+		BrowserId:   browserId,
 		HttpVersion: r.Proto,
 		TlsProtocol: tlsProtocol,
 		TlsCipher:   tlsCipher,
@@ -44,6 +83,7 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	staticDir string) {
 	receivedAt := time.Now().UTC()
+	browserId := getOrSetBrowserIdCookie(w, r, dbConn)
 
 	html, err := ioutil.ReadFile(staticDir + "/index.html")
 	if os.IsNotExist(err) {
@@ -54,12 +94,14 @@ func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	}
 	w.Write([]byte(html))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html), null.String{})
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html), null.String{},
+		browserId)
 }
 
 func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	staticDir string) {
 	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
 
 	bytes, err := ioutil.ReadFile(staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
@@ -70,11 +112,13 @@ func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	}
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{})
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
+		browserId)
 }
 
 func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
 
 	r.ParseMultipartForm(32 << 20)
 	file, handler, err := r.FormFile("audio_data")
@@ -94,7 +138,8 @@ func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	bytes := "OK"
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{})
+	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
+		browserId)
 }
 
 func param(r *http.Request, key string) null.String {
@@ -108,11 +153,12 @@ func param(r *http.Request, key string) null.String {
 
 func postCapabilities(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
 
 	w.Write([]byte("OK"))
 
 	requestLog := logRequest(
-		dbConn, receivedAt, r, http.StatusOK, len("OK"), null.String{})
+		dbConn, receivedAt, r, http.StatusOK, len("OK"), null.String{}, browserId)
 
 	err := r.ParseForm()
 	if err != nil {
@@ -148,21 +194,24 @@ func postCapabilities(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 
 func notFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
 
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
 	logRequest(dbConn, receivedAt, r, http.StatusNotFound,
-		len(http.StatusText(http.StatusNotFound)), null.String{})
+		len(http.StatusText(http.StatusNotFound)), null.String{}, browserId)
 }
 
 func getWithoutTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
+	browserId := getBrowserIdCookie(w, r)
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)
 
 	logRequest(
-		dbConn, receivedAt, r, http.StatusMovedPermanently, 0, null.String{})
+		dbConn, receivedAt, r, http.StatusMovedPermanently, 0, null.String{},
+		browserId)
 }
 
 func main() {
