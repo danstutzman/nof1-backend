@@ -2,9 +2,11 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/go-errors/errors"
 	"gopkg.in/guregu/null.v3"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -22,6 +24,8 @@ func (h recoveryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
+			fmt.Fprintln(os.Stderr, errors.Wrap(err, 2).ErrorStack())
+
 			w.WriteHeader(http.StatusInternalServerError)
 			logRequest(h.dbConn, receivedAt, r, http.StatusInternalServerError, 0,
 				null.StringFrom(errors.Wrap(err, 2).ErrorStack()))
