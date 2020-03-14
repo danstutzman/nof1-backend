@@ -250,47 +250,6 @@ func param(r *http.Request, key string) null.String {
 	}
 }
 
-func postCapabilities(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
-	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r)
-
-	w.Write([]byte("OK"))
-
-	requestLog := logRequest(
-		dbConn, receivedAt, r, http.StatusOK, len("OK"), null.String{}, browserId)
-
-	err := r.ParseForm()
-	if err != nil {
-		panic(err)
-	}
-	db.InsertIntoCapabilities(dbConn, db.CapabilitiesRow{
-		RequestId:               requestLog.Id,
-		NavigatorAppCodeName:    param(r, "nacn"),
-		NavigatorAppName:        param(r, "nan"),
-		NavigatorAppVersion:     param(r, "nav"),
-		NavigatorCookieEnabled:  param(r, "nce"),
-		NavigatorLanguage:       param(r, "nl"),
-		NavigatorLanguages:      param(r, "nls"),
-		NavigatorPlatform:       param(r, "np"),
-		NavigatorOscpu:          param(r, "no"),
-		NavigatorUserAgent:      param(r, "nua"),
-		NavigatorVendor:         param(r, "nv"),
-		NavigatorVendorSub:      param(r, "nvs"),
-		ScreenWidth:             param(r, "sw"),
-		ScreenHeight:            param(r, "sh"),
-		WindowInnerWidth:        param(r, "wiw"),
-		WindowInnerHeight:       param(r, "wih"),
-		DocBodyClientWidth:      param(r, "dbcw"),
-		DocBodyClientHeight:     param(r, "dbch"),
-		DocElementClientWidth:   param(r, "ddecw"),
-		DocElementClientHeight:  param(r, "ddech"),
-		WindowScreenAvailWidth:  param(r, "wsaw"),
-		WindowScreenAvailHeight: param(r, "wsah"),
-		WindowDevicePixelRatio:  param(r, "wdpr"),
-		HasOnTouchStart:         param(r, "ddeots"),
-	})
-}
-
 func notFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB) {
 	receivedAt := time.Now().UTC()
 	browserId := getBrowserIdCookie(w, r)
@@ -344,10 +303,6 @@ func main() {
 	router.HandleFunc("/{prefix}.mp3",
 		func(w http.ResponseWriter, r *http.Request) {
 			getStaticFile(w, r, dbConn, staticDir)
-		})
-	router.HandleFunc("/capabilities",
-		func(w http.ResponseWriter, r *http.Request) {
-			postCapabilities(w, r, dbConn)
 		})
 	router.HandleFunc("/bundle.js",
 		func(w http.ResponseWriter, r *http.Request) {
