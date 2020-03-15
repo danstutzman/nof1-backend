@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"crypto/aes"
@@ -92,12 +92,12 @@ func decrypt(noncePlusCipherTextBase64 string, secretKeyBase64 string) (string,
 	return string(plaintext), nil
 }
 
-func isSecretKeyOkay(secretKeyBase64 string) bool {
+func IsSecretKeyOkay(secretKeyBase64 string) bool {
 	secretKey, err := base64.StdEncoding.DecodeString(secretKeyBase64)
 	return err == nil && len(secretKey) == 32
 }
 
-func makeExampleSecretKey() string {
+func MakeExampleSecretKey() string {
 	example := make([]byte, 32)
 	_, err := io.ReadFull(rand.Reader, example)
 	if err != nil {

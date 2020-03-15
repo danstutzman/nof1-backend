@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -11,10 +11,10 @@ import (
 
 type recoveryHandler struct {
 	safeHandler http.Handler
-	app         App
+	app         *App
 }
 
-func newRecoveryHandler(safeHandler http.Handler, app App) http.Handler {
+func NewRecoveryHandler(safeHandler http.Handler, app *App) http.Handler {
 	return &recoveryHandler{
 		safeHandler: safeHandler,
 		app:         app,

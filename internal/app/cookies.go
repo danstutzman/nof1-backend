@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
