@@ -3,7 +3,6 @@ package main
 import (
 	appPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/app"
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
-	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
@@ -36,35 +35,8 @@ func main() {
 	}
 
 	app := appPkg.NewApp(dbConn, staticDir, secretKey)
-
-	router := mux.NewRouter()
-	router.NotFoundHandler = http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			app.NotFound(w, r)
-		})
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		app.GetRoot(w, r)
-	})
-	router.HandleFunc("/{prefix}.mp3",
-		func(w http.ResponseWriter, r *http.Request) {
-			app.GetStaticFile(w, r)
-		})
-	router.HandleFunc("/bundle.js",
-		func(w http.ResponseWriter, r *http.Request) {
-			app.GetStaticFile(w, r)
-		})
-	router.HandleFunc("/bundle.js.map",
-		func(w http.ResponseWriter, r *http.Request) {
-			app.GetStaticFile(w, r)
-		})
-	router.HandleFunc("/upload-audio",
-		func(w http.ResponseWriter, r *http.Request) {
-			app.PostUploadAudio(w, r)
-		})
-	router.HandleFunc("/sync",
-		func(w http.ResponseWriter, r *http.Request) {
-			app.PostSync(w, r)
-		})
+	router := appPkg.NewRouter(app)
+	redirectToTlsRouter := appPkg.NewRedirectToTlsRouter(app)
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
 		log.Printf("Serving TLS on :443 and HTTP on :" + httpPort + "...")
@@ -75,11 +47,6 @@ func main() {
 			panic(err)
 		}()
 
-		redirectToTlsRouter := mux.NewRouter()
-		redirectToTlsRouter.NotFoundHandler = http.HandlerFunc(
-			func(w http.ResponseWriter, r *http.Request) {
-				app.GetWithoutTls(w, r)
-			})
 		err := http.ListenAndServe(":"+httpPort,
 			appPkg.NewRecoveryHandler(redirectToTlsRouter, app))
 		panic(err)
