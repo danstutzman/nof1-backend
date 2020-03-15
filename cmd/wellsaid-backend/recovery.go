@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"github.com/go-errors/errors"
 	"gopkg.in/guregu/null.v3"
@@ -12,16 +11,13 @@ import (
 
 type recoveryHandler struct {
 	safeHandler http.Handler
-	dbConn      *sql.DB
-	secretKey   string
+	app         App
 }
 
-func newRecoveryHandler(safeHandler http.Handler, dbConn *sql.DB,
-	secretKey string) http.Handler {
+func newRecoveryHandler(safeHandler http.Handler, app App) http.Handler {
 	return &recoveryHandler{
 		safeHandler: safeHandler,
-		dbConn:      dbConn,
-		secretKey:   secretKey,
+		app:         app,
 	}
 }
 
@@ -34,9 +30,9 @@ func (h recoveryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			w.WriteHeader(http.StatusInternalServerError)
 
-			browserId := getBrowserIdCookie(w, r, h.secretKey)
+			browserId := getBrowserIdCookie(w, r, h.app.secretKey)
 
-			logRequest(h.dbConn, receivedAt, r, http.StatusInternalServerError, 0,
+			h.app.logRequest(receivedAt, r, http.StatusInternalServerError, 0,
 				null.StringFrom(errors.Wrap(err, 2).ErrorStack()), browserId)
 		}
 	}()

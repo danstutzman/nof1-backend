@@ -25,7 +25,13 @@ func setCORSHeaders(w http.ResponseWriter) {
 		"DELETE, GET, PATCH, POST, PUT")
 }
 
-func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
+type App struct {
+	dbConn    *sql.DB
+	staticDir string
+	secretKey string
+}
+
+func (app *App) logRequest(receivedAt time.Time, r *http.Request,
 	statusCode, size int, errorStack null.String, browserId int) db.RequestsRow {
 
 	var tlsProtocol null.String
@@ -37,7 +43,7 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 
 	log.Printf("%s %s\n", r.Method, r.URL.RequestURI())
 
-	return db.InsertIntoRequests(dbConn, db.RequestsRow{
+	return db.InsertIntoRequests(app.dbConn, db.RequestsRow{
 		ReceivedAt:  receivedAt,
 		RemoteAddr:  r.RemoteAddr,
 		BrowserId:   browserId,
@@ -53,46 +59,43 @@ func logRequest(dbConn *sql.DB, receivedAt time.Time, r *http.Request,
 	})
 }
 
-func getRoot(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
-	staticDir string, secretKey string) {
+func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getOrSetBrowserIdCookie(w, r, dbConn, secretKey)
+	browserId := getOrSetBrowserIdCookie(w, r, app.dbConn, app.secretKey)
 
-	html, err := ioutil.ReadFile(staticDir + "/index.html")
+	html, err := ioutil.ReadFile(app.staticDir + "/index.html")
 	if os.IsNotExist(err) {
-		notFound(w, r, dbConn, secretKey)
+		app.notFound(w, r)
 		return
 	} else if err != nil {
 		panic(err)
 	}
 	w.Write([]byte(html))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(html), null.String{},
+	app.logRequest(receivedAt, r, http.StatusOK, len(html), null.String{},
 		browserId)
 }
 
-func getStaticFile(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
-	staticDir string, secretKey string) {
+func (app *App) getStaticFile(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, secretKey)
+	browserId := getBrowserIdCookie(w, r, app.secretKey)
 
-	bytes, err := ioutil.ReadFile(staticDir + r.URL.RequestURI())
+	bytes, err := ioutil.ReadFile(app.staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
-		notFound(w, r, dbConn, secretKey)
+		app.notFound(w, r)
 		return
 	} else if err != nil {
 		panic(err)
 	}
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
+	app.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
 		browserId)
 }
 
-func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
-	secretKey string) {
+func (app *App) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, secretKey)
+	browserId := getBrowserIdCookie(w, r, app.secretKey)
 
 	r.ParseMultipartForm(32 << 20)
 	file, handler, err := r.FormFile("audio_data")
@@ -112,7 +115,7 @@ func postUploadAudio(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	bytes := "OK"
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
+	app.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
 		browserId)
 }
 
@@ -173,10 +176,9 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func postSync(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
-	secretKey string) {
+func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, secretKey)
+	browserId := getBrowserIdCookie(w, r, app.secretKey)
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
 
@@ -193,13 +195,14 @@ func postSync(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
 	}
 
 	for _, clientLog := range syncRequest.Logs {
-		db.InsertIntoLogs(dbConn, convertClientLogToLogsRow(clientLog, browserId))
+		db.InsertIntoLogs(app.dbConn,
+			convertClientLogToLogsRow(clientLog, browserId))
 	}
 
 	bytes := "{}"
 	w.Write([]byte(bytes))
 
-	logRequest(dbConn, receivedAt, r, http.StatusOK, len(bytes), null.String{},
+	app.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
 		browserId)
 }
 
@@ -212,27 +215,24 @@ func param(r *http.Request, key string) null.String {
 	}
 }
 
-func notFound(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
-	secretKey string) {
+func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, secretKey)
+	browserId := getBrowserIdCookie(w, r, app.secretKey)
 
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
-	logRequest(dbConn, receivedAt, r, http.StatusNotFound,
+	app.logRequest(receivedAt, r, http.StatusNotFound,
 		len(http.StatusText(http.StatusNotFound)), null.String{}, browserId)
 }
 
-func getWithoutTls(w http.ResponseWriter, r *http.Request, dbConn *sql.DB,
-	secretKey string) {
+func (app *App) getWithoutTls(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, secretKey)
+	browserId := getBrowserIdCookie(w, r, app.secretKey)
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)
 
-	logRequest(
-		dbConn, receivedAt, r, http.StatusMovedPermanently, 0, null.String{},
+	app.logRequest(receivedAt, r, http.StatusMovedPermanently, 0, null.String{},
 		browserId)
 }
 
@@ -262,33 +262,39 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
+	app := App{
+		dbConn:    dbConn,
+		staticDir: staticDir,
+		secretKey: secretKey,
+	}
+
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			notFound(w, r, dbConn, secretKey)
+			app.notFound(w, r)
 		})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		getRoot(w, r, dbConn, staticDir, secretKey)
+		app.getRoot(w, r)
 	})
 	router.HandleFunc("/{prefix}.mp3",
 		func(w http.ResponseWriter, r *http.Request) {
-			getStaticFile(w, r, dbConn, staticDir, secretKey)
+			app.getStaticFile(w, r)
 		})
 	router.HandleFunc("/bundle.js",
 		func(w http.ResponseWriter, r *http.Request) {
-			getStaticFile(w, r, dbConn, staticDir, secretKey)
+			app.getStaticFile(w, r)
 		})
 	router.HandleFunc("/bundle.js.map",
 		func(w http.ResponseWriter, r *http.Request) {
-			getStaticFile(w, r, dbConn, staticDir, secretKey)
+			app.getStaticFile(w, r)
 		})
 	router.HandleFunc("/upload-audio",
 		func(w http.ResponseWriter, r *http.Request) {
-			postUploadAudio(w, r, dbConn, secretKey)
+			app.postUploadAudio(w, r)
 		})
 	router.HandleFunc("/sync",
 		func(w http.ResponseWriter, r *http.Request) {
-			postSync(w, r, dbConn, secretKey)
+			app.postSync(w, r)
 		})
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
@@ -296,22 +302,21 @@ func main() {
 
 		go func() {
 			err := http.ListenAndServeTLS(":443", httpsCertFile, httpsKeyFile,
-				newRecoveryHandler(router, dbConn, secretKey))
+				newRecoveryHandler(router, app))
 			panic(err)
 		}()
 
 		redirectToTlsRouter := mux.NewRouter()
 		redirectToTlsRouter.NotFoundHandler = http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				getWithoutTls(w, r, dbConn, secretKey)
+				app.getWithoutTls(w, r)
 			})
 		err := http.ListenAndServe(":"+httpPort,
-			newRecoveryHandler(redirectToTlsRouter, dbConn, secretKey))
+			newRecoveryHandler(redirectToTlsRouter, app))
 		panic(err)
 	} else {
 		log.Printf("Serving HTTP on :" + httpPort + "...")
-		err := http.ListenAndServe(":"+httpPort,
-			newRecoveryHandler(router, dbConn, secretKey))
+		err := http.ListenAndServe(":"+httpPort, newRecoveryHandler(router, app))
 		panic(err)
 	}
 }
