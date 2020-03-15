@@ -50,7 +50,7 @@ func (app *App) logRequest(receivedAt time.Time, r *http.Request,
 
 func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getOrSetBrowserIdCookie(w, r, app.dbConn, app.secretKey)
+	browserId := app.getOrSetBrowserIdCookie(w, r)
 
 	html, err := ioutil.ReadFile(app.staticDir + "/index.html")
 	if os.IsNotExist(err) {
@@ -67,7 +67,7 @@ func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) getStaticFile(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, app.secretKey)
+	browserId := app.getBrowserIdCookie(w, r)
 
 	bytes, err := ioutil.ReadFile(app.staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
@@ -84,7 +84,7 @@ func (app *App) getStaticFile(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, app.secretKey)
+	browserId := app.getBrowserIdCookie(w, r)
 
 	r.ParseMultipartForm(32 << 20)
 	file, handler, err := r.FormFile("audio_data")
@@ -178,7 +178,7 @@ type SyncRequest struct {
 
 func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, app.secretKey)
+	browserId := app.getBrowserIdCookie(w, r)
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
 
@@ -208,7 +208,7 @@ func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, app.secretKey)
+	browserId := app.getBrowserIdCookie(w, r)
 
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
@@ -218,7 +218,7 @@ func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) getWithoutTls(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := getBrowserIdCookie(w, r, app.secretKey)
+	browserId := app.getBrowserIdCookie(w, r)
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)
