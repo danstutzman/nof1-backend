@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func (app *App) PostUploadAudio(w http.ResponseWriter, r *http.Request) {
+func (app *App) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
 	browserId := app.getBrowserIdCookie(w, r)
 

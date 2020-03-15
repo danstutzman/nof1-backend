@@ -9,30 +9,30 @@ func NewRouter(app *App) *mux.Router {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			app.NotFound(w, r)
+			app.notFound(w, r)
 		})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		app.GetRoot(w, r)
+		app.getRoot(w, r)
 	})
 	router.HandleFunc("/{prefix}.mp3",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.GetStaticFile(w, r)
+			app.getStaticFile(w, r)
 		})
 	router.HandleFunc("/bundle.js",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.GetStaticFile(w, r)
+			app.getStaticFile(w, r)
 		})
 	router.HandleFunc("/bundle.js.map",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.GetStaticFile(w, r)
+			app.getStaticFile(w, r)
 		})
 	router.HandleFunc("/upload-audio",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.PostUploadAudio(w, r)
+			app.postUploadAudio(w, r)
 		})
 	router.HandleFunc("/sync",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.PostSync(w, r)
+			app.postSync(w, r)
 		})
 	return router
 }
@@ -41,7 +41,7 @@ func NewRedirectToTlsRouter(app *App) *mux.Router {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			app.GetWithoutTls(w, r)
+			app.getWithoutTls(w, r)
 		})
 	return router
 }

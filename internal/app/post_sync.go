@@ -71,7 +71,7 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func (app *App) PostSync(w http.ResponseWriter, r *http.Request) {
+func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
 	browserId := app.getBrowserIdCookie(w, r)
 	setCORSHeaders(w)
