@@ -1,40 +1,30 @@
 package db
 
 import (
-	"crypto/rand"
 	"database/sql"
-	"encoding/base64"
 	"fmt"
 	sqlite3 "github.com/mattn/go-sqlite3"
-	"io"
+	"gopkg.in/guregu/null.v3"
 	"log"
 	"time"
 )
 
 type BrowsersRow struct {
-	Id             int
+	Id             int64
 	Token          string
 	UserAgent      string
 	Accept         string
 	AcceptEncoding string
 	AcceptLanguage string
 	Referer        string
+	UserId         null.Int
 	CreatedAt      time.Time
 	LastSeenAt     time.Time
 }
 
-func generateToken() string {
-	buffer := make([]byte, 8)
-	_, err := io.ReadFull(rand.Reader, buffer)
-	if err != nil {
-		panic(err)
-	}
-	return base64.RawURLEncoding.EncodeToString(buffer)
-}
-
 func assertBrowsersHasCorrectSchema(db *sql.DB) {
 	query := `SELECT id, token, user_agent, accept, accept_encoding,
-		accept_language, referer, created_at
+		accept_language, referer, user_id, created_at, last_seen_at
 	  FROM browsers LIMIT 1`
 	if LOG {
 		log.Println(query)
@@ -54,15 +44,16 @@ func InsertIntoBrowsers(db *sql.DB, row BrowsersRow) BrowsersRow {
 
 		query := fmt.Sprintf(`INSERT INTO browsers
 				(token, user_agent, accept, accept_encoding, accept_language,
-				referer, created_at, last_seen_at)
+				referer, user_id, created_at, last_seen_at)
 				VALUES (%s, %s, %s, %s, %s,
-				 %s, %d, %d)`,
+				 %s, %s, %d, %d)`,
 			EscapeString(row.Token),
 			EscapeString(row.UserAgent),
 			EscapeString(row.Accept),
 			EscapeString(row.AcceptEncoding),
 			EscapeString(row.AcceptLanguage),
 			EscapeString(row.Referer),
+			EscapeNullInt(row.UserId),
 			row.CreatedAt.Unix(),
 			row.LastSeenAt.Unix())
 		if LOG {
@@ -75,7 +66,7 @@ func InsertIntoBrowsers(db *sql.DB, row BrowsersRow) BrowsersRow {
 			if err != nil {
 				panic(err)
 			}
-			row.Id = int(id)
+			row.Id = id
 			return row
 		} else if sqliteErr, ok := err.(sqlite3.Error); ok &&
 			sqliteErr.Code == sqlite3.ErrConstraint {
@@ -87,32 +78,74 @@ func InsertIntoBrowsers(db *sql.DB, row BrowsersRow) BrowsersRow {
 	panic("Too many collisions")
 }
 
-func LookupIdForBrowserToken(db *sql.DB, token string) int {
-	query := "SELECT id FROM browsers WHERE token = $1"
+func FromBrowsers(db *sql.DB, whereLimit string) []BrowsersRow {
+	query := `SELECT id, token, user_agent, accept, accept_encoding,
+		accept_language, referer, user_id, created_at, last_seen_at
+	  FROM browsers ` + whereLimit
 	if LOG {
 		log.Println(query)
 	}
 
-	var id int
-	row := db.QueryRow(query, token)
-	err := row.Scan(&id)
-	if err == sql.ErrNoRows {
-		return 0
-	} else if err == nil {
-		return id
-	} else {
+	rset, err := db.Query(query)
+	if err != nil {
 		panic(err)
 	}
+	defer rset.Close()
+
+	var rows []BrowsersRow
+	for rset.Next() {
+		var row BrowsersRow
+		var createdAt int
+		var lastSeenAt int
+		err = rset.Scan(&row.Id,
+			&row.Token,
+			&row.UserAgent,
+			&row.Accept,
+			&row.AcceptEncoding,
+			&row.AcceptLanguage,
+			&row.Referer,
+			&row.UserId,
+			&createdAt,
+			&lastSeenAt)
+		if err != nil {
+			panic(err)
+		}
+
+		row.CreatedAt = time.Unix(int64(createdAt), 0)
+		row.LastSeenAt = time.Unix(int64(lastSeenAt), 0)
+
+		rows = append(rows, row)
+	}
+
+	err = rset.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return rows
 }
 
-func TouchBrowserLastSeenAt(db *sql.DB, browserId int) {
+func TouchBrowserLastSeenAt(db *sql.DB, browserId int64) {
 	query := "UPDATE browsers SET last_seen_at = $1 WHERE id = $2"
 	if LOG {
 		log.Println(query)
 	}
 
 	lastSeenAt := time.Now().UTC()
-	_, err := db.Exec(query, EscapeNanoTime(lastSeenAt), browserId)
+	_, err := db.Exec(query, lastSeenAt.Unix(), browserId)
+	if err != nil {
+		panic(err)
+	}
+}
+
+func UpdateUserIdAndLastSeenAtOnBrowser(db *sql.DB, userId, browserId int64) {
+	query := "UPDATE browsers SET user_id = $1, last_seen_at = $2 WHERE id = $3"
+	if LOG {
+		log.Println(query)
+	}
+
+	lastSeenAt := time.Now().UTC()
+	_, err := db.Exec(query, userId, lastSeenAt.Unix(), browserId)
 	if err != nil {
 		panic(err)
 	}

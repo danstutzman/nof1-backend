@@ -7,11 +7,11 @@ import (
 )
 
 type SyncRequest struct {
-	Logs []map[string]interface{}
+	Logs []map[string]interface{} `json:"logs"`
 }
 
 func convertClientLogToLogsRow(clientLog map[string]interface{},
-	userId int) db.LogsRow {
+	browserId int64) db.LogsRow {
 
 	var idOnClient int
 	if f, ok := clientLog["id"].(float64); ok {
@@ -57,7 +57,7 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 
 	return db.LogsRow{
-		UserId:           userId,
+		BrowserId:        browserId,
 		IdOnClient:       idOnClient,
 		TimeOnClient:     timeOnClient,
 		Message:          message,
@@ -68,9 +68,7 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func (app *App) PostSync(syncRequest SyncRequest) {
-	userId := 0 // TODO: convert from user token
-
+func (app *App) PostSync(syncRequest SyncRequest, userId int64) {
 	for _, clientLog := range syncRequest.Logs {
 		db.InsertIntoLogs(app.dbConn,
 			convertClientLogToLogsRow(clientLog, userId))

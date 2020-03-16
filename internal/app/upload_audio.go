@@ -3,12 +3,20 @@ package app
 import (
 	"io"
 	"os"
+	"path"
+	"strconv"
 )
 
-func (app *App) PostUploadAudio(file io.Reader, filename string) {
-	path := app.uploadDir + filename
+func (app *App) PostUploadAudio(file io.Reader, userId int64, filename string) {
+	userDir := path.Join(app.uploadDir, strconv.FormatInt(userId, 10))
+	err := os.MkdirAll(userDir, 0777)
+	if err != nil {
+		panic(err)
+	}
 
-	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE, 0666)
+	audioPath := path.Join(userDir, filename)
+
+	f, err := os.OpenFile(audioPath, os.O_WRONLY|os.O_CREATE, 0666)
 	if err != nil {
 		panic(err)
 	}

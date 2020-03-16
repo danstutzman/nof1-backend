@@ -9,10 +9,10 @@ import (
 )
 
 type RequestsRow struct {
-	Id          int
+	Id          int64
 	ReceivedAt  time.Time
 	RemoteAddr  string
-	BrowserId   int
+	BrowserId   null.Int
 	HttpVersion string
 	TlsProtocol null.String
 	TlsCipher   null.String
@@ -46,13 +46,13 @@ func InsertIntoRequests(db *sql.DB, row RequestsRow) RequestsRow {
 		 http_version, tls_protocol, tls_cipher,
 		 method, path,
 		 duration_ms, status_code, size, error_stack)
-    VALUES (%s, %s, %d,
+    VALUES (%s, %s, %s,
 		 %s, %s, %s,
 		 %s, %s,
 		 %d, %d, %d, %s)`,
 		EscapeNanoTime(row.ReceivedAt),
 		EscapeString(row.RemoteAddr),
-		row.BrowserId,
+		EscapeNullInt(row.BrowserId),
 		EscapeString(row.HttpVersion),
 		EscapeNullString(row.TlsProtocol),
 		EscapeNullString(row.TlsCipher),
@@ -75,7 +75,7 @@ func InsertIntoRequests(db *sql.DB, row RequestsRow) RequestsRow {
 	if err != nil {
 		panic(err)
 	}
-	row.Id = int(id)
+	row.Id = id
 
 	return row
 }

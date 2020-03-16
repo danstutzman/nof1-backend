@@ -2,6 +2,7 @@ package webapp
 
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -9,25 +10,25 @@ import (
 
 const COOKIE_NAME = "browser-token"
 
-func (webapp *WebApp) getBrowserTokenCookie(r *http.Request) int {
+func (webapp *WebApp) getBrowserFromCookie(r *http.Request) *db.BrowsersRow {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err == nil {
-		browserId := db.LookupIdForBrowserToken(webapp.dbConn, cookie.Value)
-		if browserId == 0 {
+		browsers := db.FromBrowsers(webapp.dbConn,
+			fmt.Sprintf("WHERE token=%s LIMIT 1", db.EscapeString(cookie.Value)))
+		if len(browsers) == 0 {
 			log.Printf("No browser row for %s cookie", COOKIE_NAME)
-		} else {
-			db.TouchBrowserLastSeenAt(webapp.dbConn, browserId)
+			return nil
 		}
-		return browserId
+		return &browsers[0]
 	} else if err == http.ErrNoCookie {
-		return 0
+		return nil
 	} else {
 		panic(err)
 	}
 }
 
-func (webapp *WebApp) setBrowserTokenCookie(w http.ResponseWriter,
-	r *http.Request) int {
+func (webapp *WebApp) setBrowserInCookie(w http.ResponseWriter,
+	r *http.Request) *db.BrowsersRow {
 
 	browser := db.InsertIntoBrowsers(webapp.dbConn, db.BrowsersRow{
 		UserAgent:      r.UserAgent(),
@@ -43,5 +44,5 @@ func (webapp *WebApp) setBrowserTokenCookie(w http.ResponseWriter,
 		Expires: time.Now().AddDate(30, 0, 0),
 	})
 
-	return browser.Id
+	return &browser
 }

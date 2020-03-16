@@ -8,7 +8,7 @@ import (
 )
 
 type LogsRow struct {
-	UserId           int
+	BrowserId        int64
 	IdOnClient       int
 	TimeOnClient     int
 	Message          string
@@ -19,7 +19,7 @@ type LogsRow struct {
 }
 
 func assertLogsHasCorrectSchema(db *sql.DB) {
-	query := `SELECT user_id, id_on_client, time_on_client, message,
+	query := `SELECT browser_id, id_on_client, time_on_client, message,
 		error_name, error_message, error_stack, other_details_json
 	  FROM logs LIMIT 1`
 	if LOG {
@@ -34,11 +34,11 @@ func assertLogsHasCorrectSchema(db *sql.DB) {
 
 func InsertIntoLogs(db *sql.DB, row LogsRow) {
 	query := fmt.Sprintf(`INSERT INTO logs
-    (user_id, id_on_client, time_on_client, message,
+    (browser_id, id_on_client, time_on_client, message,
 		 error_name, error_message, error_stack, other_details_json)
     VALUES (%d, %d, %d, %s,
 		 %s, %s, %s, %s)`,
-		row.UserId,
+		row.BrowserId,
 		row.IdOnClient,
 		row.TimeOnClient,
 		EscapeString(row.Message),

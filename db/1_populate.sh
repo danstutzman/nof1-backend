@@ -12,6 +12,7 @@ sqlite3 db.sqlite3 <<EOF
     accept_encoding  TEXT NOT NULL,
     accept_language  TEXT NOT NULL,
     referer          TEXT NOT NULL,
+    user_id          INTEGER,
     created_at       INTEGER NOT NULL,
     last_seen_at     INTEGER NOT NULL
   );
@@ -37,7 +38,7 @@ sqlite3 db.sqlite3 <<EOF
   DROP TABLE IF EXISTS logs;
   CREATE TABLE logs (
     id                 INTEGER PRIMARY KEY NOT NULL,
-    user_id            INTEGER NOT NULL,
+    browser_id         INTEGER NOT NULL,
     id_on_client       INTEGER NOT NULL,
     time_on_client     INTEGER NOT NULL,
     message            TEXT NOT NULL,
@@ -46,4 +47,13 @@ sqlite3 db.sqlite3 <<EOF
     error_stack        TEXT,
     other_details_json TEXT
   );
+
+  DROP TABLE IF EXISTS users;
+  CREATE TABLE users (
+    id           INTEGER PRIMARY KEY NOT NULL,
+    token        TEXT NOT NULL,
+    created_at   INTEGER NOT NULL,
+    last_seen_at INTEGER NOT NULL
+  );
+  CREATE UNIQUE INDEX idx_users_token ON users(token);
 EOF

@@ -32,7 +32,8 @@ func NewWebApp(
 }
 
 func (webapp *WebApp) logRequest(receivedAt time.Time, r *http.Request,
-	statusCode, size int, errorStack null.String, browserId int) db.RequestsRow {
+	statusCode, size int, errorStack null.String,
+	browser *db.BrowsersRow) db.RequestsRow {
 
 	var tlsProtocol null.String
 	var tlsCipher null.String
@@ -42,6 +43,12 @@ func (webapp *WebApp) logRequest(receivedAt time.Time, r *http.Request,
 	}
 
 	log.Printf("%s %s\n", r.Method, r.URL.RequestURI())
+
+	var browserId null.Int
+	if browser != nil {
+		browserId = null.IntFrom(browser.Id)
+		db.TouchBrowserLastSeenAt(webapp.dbConn, browser.Id)
+	}
 
 	return db.InsertIntoRequests(webapp.dbConn, db.RequestsRow{
 		ReceivedAt:  receivedAt,
@@ -61,7 +68,7 @@ func (webapp *WebApp) logRequest(receivedAt time.Time, r *http.Request,
 
 func (webapp *WebApp) getRoot(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := webapp.getBrowserTokenCookie(r)
+	browser := webapp.getBrowserFromCookie(r)
 
 	html, err := ioutil.ReadFile(webapp.staticDir + "/index.html")
 	if os.IsNotExist(err) {
@@ -71,18 +78,18 @@ func (webapp *WebApp) getRoot(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	if browserId == 0 {
-		browserId = webapp.setBrowserTokenCookie(w, r)
+	if browser == nil {
+		browser = webapp.setBrowserInCookie(w, r)
 	}
 	w.Write([]byte(html))
 
 	webapp.logRequest(receivedAt, r, http.StatusOK, len(html), null.String{},
-		browserId)
+		browser)
 }
 
 func (webapp *WebApp) getStaticFile(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := webapp.getBrowserTokenCookie(r)
+	browser := webapp.getBrowserFromCookie(r)
 
 	bytes, err := ioutil.ReadFile(webapp.staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
@@ -94,7 +101,7 @@ func (webapp *WebApp) getStaticFile(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(bytes))
 
 	webapp.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
-		browserId)
+		browser)
 }
 
 func setCORSHeaders(w http.ResponseWriter) {
@@ -105,21 +112,21 @@ func setCORSHeaders(w http.ResponseWriter) {
 
 func (webapp *WebApp) notFound(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := webapp.getBrowserTokenCookie(r)
+	browser := webapp.getBrowserFromCookie(r)
 
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
 	webapp.logRequest(receivedAt, r, http.StatusNotFound,
-		len(http.StatusText(http.StatusNotFound)), null.String{}, browserId)
+		len(http.StatusText(http.StatusNotFound)), null.String{}, browser)
 }
 
 func (webapp *WebApp) getWithoutTls(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := webapp.getBrowserTokenCookie(r)
+	browser := webapp.getBrowserFromCookie(r)
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)
 
-	webapp.logRequest(receivedAt, r, http.StatusMovedPermanently, 0, null.String{},
-		browserId)
+	webapp.logRequest(receivedAt, r, http.StatusMovedPermanently, 0,
+		null.String{}, browser)
 }

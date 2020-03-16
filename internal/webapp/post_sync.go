@@ -11,7 +11,7 @@ import (
 
 func (webapp *WebApp) postSync(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := webapp.getBrowserTokenCookie(r)
+	browser := webapp.getBrowserFromCookie(r)
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
 
@@ -27,14 +27,14 @@ func (webapp *WebApp) postSync(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 
-	webapp.app.PostSync(syncRequest)
-
-	if browserId == 0 {
-		browserId = webapp.setBrowserTokenCookie(w, r)
+	if browser == nil {
+		browser = webapp.setBrowserInCookie(w, r)
 	}
-	bytes := "{}"
-	w.Write([]byte(bytes))
+	webapp.app.PostSync(syncRequest, browser.Id)
+
+	bytes := []byte("{}")
+	w.Write(bytes)
 
 	webapp.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
-		browserId)
+		browser)
 }

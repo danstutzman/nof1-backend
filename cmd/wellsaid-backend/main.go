@@ -29,7 +29,7 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
-	app := appPkg.NewApp(dbConn, "/tmp")
+	app := appPkg.NewApp(dbConn, "/tmp/wellsaid-backend")
 	webapp := webappPkg.NewWebApp(app, dbConn, staticDir)
 	router := webappPkg.NewRouter(webapp)
 	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)
