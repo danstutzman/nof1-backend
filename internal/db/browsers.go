@@ -47,7 +47,7 @@ func assertBrowsersHasCorrectSchema(db *sql.DB) {
 }
 
 func InsertIntoBrowsers(db *sql.DB, row BrowsersRow) BrowsersRow {
-	for true {
+	for numCollisions := 0; numCollisions < 10; numCollisions += 1 {
 		row.Token = generateToken()
 		row.CreatedAt = time.Now().UTC()
 		row.LastSeenAt = time.Now().UTC()
@@ -79,12 +79,12 @@ func InsertIntoBrowsers(db *sql.DB, row BrowsersRow) BrowsersRow {
 			return row
 		} else if sqliteErr, ok := err.(sqlite3.Error); ok &&
 			sqliteErr.Code == sqlite3.ErrConstraint {
-			// Let the infinite loop repeat
+			// Let the loop repeat
 		} else {
 			panic(err)
 		}
 	} // Loop
-	panic("Unreached code")
+	panic("Too many collisions")
 }
 
 func LookupIdForBrowserToken(db *sql.DB, token string) int {
