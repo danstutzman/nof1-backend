@@ -26,11 +26,11 @@ func (h recoveryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
+			browserId := h.app.getBrowserTokenCookie(r)
+
 			fmt.Fprintln(os.Stderr, errors.Wrap(err, 2).ErrorStack())
 
 			w.WriteHeader(http.StatusInternalServerError)
-
-			browserId := h.app.getBrowserTokenCookie(w, r)
 
 			h.app.logRequest(receivedAt, r, http.StatusInternalServerError, 0,
 				null.StringFrom(errors.Wrap(err, 2).ErrorStack()), browserId)

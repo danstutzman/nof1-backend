@@ -57,7 +57,7 @@ func (app *App) logRequest(receivedAt time.Time, r *http.Request,
 
 func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getOrSetBrowserTokenCookie(w, r)
+	browserId := app.getBrowserTokenCookie(r)
 
 	html, err := ioutil.ReadFile(app.staticDir + "/index.html")
 	if os.IsNotExist(err) {
@@ -65,6 +65,10 @@ func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		panic(err)
+	}
+
+	if browserId == 0 {
+		browserId = app.setBrowserTokenCookie(w, r)
 	}
 	w.Write([]byte(html))
 
@@ -74,7 +78,7 @@ func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) getStaticFile(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserTokenCookie(w, r)
+	browserId := app.getBrowserTokenCookie(r)
 
 	bytes, err := ioutil.ReadFile(app.staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
@@ -97,7 +101,7 @@ func setCORSHeaders(w http.ResponseWriter) {
 
 func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserTokenCookie(w, r)
+	browserId := app.getBrowserTokenCookie(r)
 
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
@@ -107,7 +111,7 @@ func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) getWithoutTls(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserTokenCookie(w, r)
+	browserId := app.getBrowserTokenCookie(r)
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)
