@@ -1,8 +1,8 @@
 package main
 
 import (
-	appPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/app"
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	webappPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/webapp"
 	"log"
 	"net/http"
 	"os"
@@ -28,26 +28,26 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
-	app := appPkg.NewApp(dbConn, staticDir)
-	router := appPkg.NewRouter(app)
-	redirectToTlsRouter := appPkg.NewRedirectToTlsRouter(app)
+	webapp := webappPkg.NewWebApp(dbConn, staticDir)
+	router := webappPkg.NewRouter(webapp)
+	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
 		log.Printf("Serving TLS on :443 and HTTP on :" + httpPort + "...")
 
 		go func() {
 			err := http.ListenAndServeTLS(":443", httpsCertFile, httpsKeyFile,
-				appPkg.NewRecoveryHandler(router, app))
+				webappPkg.NewRecoveryHandler(router, webapp))
 			panic(err)
 		}()
 
 		err := http.ListenAndServe(":"+httpPort,
-			appPkg.NewRecoveryHandler(redirectToTlsRouter, app))
+			webappPkg.NewRecoveryHandler(redirectToTlsRouter, webapp))
 		panic(err)
 	} else {
 		log.Printf("Serving HTTP on :" + httpPort + "...")
 		err := http.ListenAndServe(":"+httpPort,
-			appPkg.NewRecoveryHandler(router, app))
+			webappPkg.NewRecoveryHandler(router, webapp))
 		panic(err)
 	}
 }

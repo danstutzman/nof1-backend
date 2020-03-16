@@ -1,47 +1,47 @@
-package app
+package webapp
 
 import (
 	"github.com/gorilla/mux"
 	"net/http"
 )
 
-func NewRouter(app *App) *mux.Router {
+func NewRouter(webapp *WebApp) *mux.Router {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			app.notFound(w, r)
+			webapp.notFound(w, r)
 		})
 	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		app.getRoot(w, r)
+		webapp.getRoot(w, r)
 	})
 	router.HandleFunc("/{prefix}.mp3",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.getStaticFile(w, r)
+			webapp.getStaticFile(w, r)
 		})
 	router.HandleFunc("/bundle.js",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.getStaticFile(w, r)
+			webapp.getStaticFile(w, r)
 		})
 	router.HandleFunc("/bundle.js.map",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.getStaticFile(w, r)
+			webapp.getStaticFile(w, r)
 		})
 	router.HandleFunc("/upload-audio",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.postUploadAudio(w, r)
+			webapp.postUploadAudio(w, r)
 		})
 	router.HandleFunc("/sync",
 		func(w http.ResponseWriter, r *http.Request) {
-			app.postSync(w, r)
+			webapp.postSync(w, r)
 		})
 	return router
 }
 
-func NewRedirectToTlsRouter(app *App) *mux.Router {
+func NewRedirectToTlsRouter(webapp *WebApp) *mux.Router {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
-			app.getWithoutTls(w, r)
+			webapp.getWithoutTls(w, r)
 		})
 	return router
 }

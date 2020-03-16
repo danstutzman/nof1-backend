@@ -1,4 +1,4 @@
-package app
+package webapp
 
 import (
 	"fmt"
@@ -11,13 +11,13 @@ import (
 
 type recoveryHandler struct {
 	safeHandler http.Handler
-	app         *App
+	webapp      *WebApp
 }
 
-func NewRecoveryHandler(safeHandler http.Handler, app *App) http.Handler {
+func NewRecoveryHandler(safeHandler http.Handler, webapp *WebApp) http.Handler {
 	return &recoveryHandler{
 		safeHandler: safeHandler,
-		app:         app,
+		webapp:      webapp,
 	}
 }
 
@@ -26,13 +26,13 @@ func (h recoveryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	defer func() {
 		if err := recover(); err != nil {
-			browserId := h.app.getBrowserTokenCookie(r)
+			browserId := h.webapp.getBrowserTokenCookie(r)
 
 			fmt.Fprintln(os.Stderr, errors.Wrap(err, 2).ErrorStack())
 
 			w.WriteHeader(http.StatusInternalServerError)
 
-			h.app.logRequest(receivedAt, r, http.StatusInternalServerError, 0,
+			h.webapp.logRequest(receivedAt, r, http.StatusInternalServerError, 0,
 				null.StringFrom(errors.Wrap(err, 2).ErrorStack()), browserId)
 		}
 	}()

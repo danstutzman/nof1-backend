@@ -1,4 +1,4 @@
-package app
+package webapp
 
 import (
 	"gopkg.in/guregu/null.v3"
@@ -9,9 +9,9 @@ import (
 	"time"
 )
 
-func (app *App) postUploadAudio(w http.ResponseWriter, r *http.Request) {
+func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserTokenCookie(r)
+	browserId := webapp.getBrowserTokenCookie(r)
 
 	r.ParseMultipartForm(32 << 20)
 	file, handler, err := r.FormFile("audio_data")
@@ -29,11 +29,11 @@ func (app *App) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	io.Copy(f, file)
 
 	if browserId == 0 {
-		browserId = app.setBrowserTokenCookie(w, r)
+		browserId = webapp.setBrowserTokenCookie(w, r)
 	}
 	bytes := "OK"
 	w.Write([]byte(bytes))
 
-	app.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
+	webapp.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
 		browserId)
 }

@@ -1,4 +1,4 @@
-package app
+package webapp
 
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
@@ -9,14 +9,14 @@ import (
 
 const COOKIE_NAME = "browser-token"
 
-func (app *App) getBrowserTokenCookie(r *http.Request) int {
+func (webapp *WebApp) getBrowserTokenCookie(r *http.Request) int {
 	cookie, err := r.Cookie(COOKIE_NAME)
 	if err == nil {
-		browserId := db.LookupIdForBrowserToken(app.dbConn, cookie.Value)
+		browserId := db.LookupIdForBrowserToken(webapp.dbConn, cookie.Value)
 		if browserId == 0 {
 			log.Printf("No browser row for %s cookie", COOKIE_NAME)
 		} else {
-			db.TouchBrowserLastSeenAt(app.dbConn, browserId)
+			db.TouchBrowserLastSeenAt(webapp.dbConn, browserId)
 		}
 		return browserId
 	} else if err == http.ErrNoCookie {
@@ -26,10 +26,10 @@ func (app *App) getBrowserTokenCookie(r *http.Request) int {
 	}
 }
 
-func (app *App) setBrowserTokenCookie(w http.ResponseWriter,
+func (webapp *WebApp) setBrowserTokenCookie(w http.ResponseWriter,
 	r *http.Request) int {
 
-	browser := db.InsertIntoBrowsers(app.dbConn, db.BrowsersRow{
+	browser := db.InsertIntoBrowsers(webapp.dbConn, db.BrowsersRow{
 		UserAgent:      r.UserAgent(),
 		Accept:         r.Header.Get("Accept"),
 		AcceptEncoding: r.Header.Get("Accept-Encoding"),

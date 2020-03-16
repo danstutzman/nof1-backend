@@ -1,4 +1,4 @@
-package app
+package webapp
 
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
@@ -71,9 +71,9 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
+func (webapp *WebApp) postSync(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserTokenCookie(r)
+	browserId := webapp.getBrowserTokenCookie(r)
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
 
@@ -90,16 +90,16 @@ func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, clientLog := range syncRequest.Logs {
-		db.InsertIntoLogs(app.dbConn,
+		db.InsertIntoLogs(webapp.dbConn,
 			convertClientLogToLogsRow(clientLog, browserId))
 	}
 
 	if browserId == 0 {
-		browserId = app.setBrowserTokenCookie(w, r)
+		browserId = webapp.setBrowserTokenCookie(w, r)
 	}
 	bytes := "{}"
 	w.Write([]byte(bytes))
 
-	app.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
+	webapp.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
 		browserId)
 }
