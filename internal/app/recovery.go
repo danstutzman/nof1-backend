@@ -30,7 +30,7 @@ func (h recoveryHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 			w.WriteHeader(http.StatusInternalServerError)
 
-			browserId := h.app.getBrowserIdCookie(w, r)
+			browserId := h.app.getBrowserTokenCookie(w, r)
 
 			h.app.logRequest(receivedAt, r, http.StatusInternalServerError, 0,
 				null.StringFrom(errors.Wrap(err, 2).ErrorStack()), browserId)

@@ -73,7 +73,7 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 
 func (app *App) postSync(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserIdCookie(w, r)
+	browserId := app.getBrowserTokenCookie(w, r)
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
 

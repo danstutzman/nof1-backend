@@ -9,12 +9,6 @@ import (
 )
 
 func main() {
-	secretKey := os.Getenv("SECRET_KEY")
-	if !appPkg.IsSecretKeyOkay(secretKey) {
-		log.Fatalf("Set SECRET_KEY env var to any random 32 bytes Base64-encoded, "+
-			"for example: %s", appPkg.MakeExampleSecretKey())
-	}
-
 	httpPort := os.Getenv("HTTP_PORT")
 	if httpPort == "" {
 		log.Fatalf("Set HTTP_PORT env var")
@@ -34,7 +28,7 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
-	app := appPkg.NewApp(dbConn, staticDir, secretKey)
+	app := appPkg.NewApp(dbConn, staticDir)
 	router := appPkg.NewRouter(app)
 	redirectToTlsRouter := appPkg.NewRedirectToTlsRouter(app)
 

@@ -11,7 +11,7 @@ import (
 
 func (app *App) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserIdCookie(w, r)
+	browserId := app.getBrowserTokenCookie(w, r)
 
 	r.ParseMultipartForm(32 << 20)
 	file, handler, err := r.FormFile("audio_data")

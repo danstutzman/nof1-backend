@@ -15,18 +15,15 @@ import (
 type App struct {
 	dbConn    *sql.DB
 	staticDir string
-	secretKey string
 }
 
 func NewApp(
 	dbConn *sql.DB,
 	staticDir string,
-	secretKey string,
 ) *App {
 	return &App{
 		dbConn:    dbConn,
 		staticDir: staticDir,
-		secretKey: secretKey,
 	}
 }
 
@@ -60,7 +57,7 @@ func (app *App) logRequest(receivedAt time.Time, r *http.Request,
 
 func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getOrSetBrowserIdCookie(w, r)
+	browserId := app.getOrSetBrowserTokenCookie(w, r)
 
 	html, err := ioutil.ReadFile(app.staticDir + "/index.html")
 	if os.IsNotExist(err) {
@@ -77,7 +74,7 @@ func (app *App) getRoot(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) getStaticFile(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserIdCookie(w, r)
+	browserId := app.getBrowserTokenCookie(w, r)
 
 	bytes, err := ioutil.ReadFile(app.staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
@@ -100,7 +97,7 @@ func setCORSHeaders(w http.ResponseWriter) {
 
 func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserIdCookie(w, r)
+	browserId := app.getBrowserTokenCookie(w, r)
 
 	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
 
@@ -110,7 +107,7 @@ func (app *App) notFound(w http.ResponseWriter, r *http.Request) {
 
 func (app *App) getWithoutTls(w http.ResponseWriter, r *http.Request) {
 	receivedAt := time.Now().UTC()
-	browserId := app.getBrowserIdCookie(w, r)
+	browserId := app.getBrowserTokenCookie(w, r)
 
 	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
 		http.StatusMovedPermanently)

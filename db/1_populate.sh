@@ -6,13 +6,16 @@ sqlite3 db.sqlite3 <<EOF
   DROP TABLE IF EXISTS browsers;
   CREATE TABLE browsers (
     id               INTEGER PRIMARY KEY NOT NULL,
+    token            TEXT NOT NULL,
     user_agent       TEXT NOT NULL,
     accept           TEXT NOT NULL,
     accept_encoding  TEXT NOT NULL,
     accept_language  TEXT NOT NULL,
     referer          TEXT NOT NULL,
-    created_at       TEXT NOT NULL
+    created_at       INTEGER NOT NULL,
+    last_seen_at     INTEGER NOT NULL
   );
+  CREATE UNIQUE INDEX idx_browsers_token ON browsers(token);
 
   DROP TABLE IF EXISTS requests;
   CREATE TABLE requests (
