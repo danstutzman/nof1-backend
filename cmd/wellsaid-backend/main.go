@@ -1,6 +1,7 @@
 package main
 
 import (
+	appPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/app"
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
 	webappPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/webapp"
 	"log"
@@ -28,7 +29,8 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
-	webapp := webappPkg.NewWebApp(dbConn, staticDir)
+	app := appPkg.NewApp(dbConn, "/tmp")
+	webapp := webappPkg.NewWebApp(app, dbConn, staticDir)
 	router := webappPkg.NewRouter(webapp)
 	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)
 

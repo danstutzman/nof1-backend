@@ -1,6 +1,7 @@
 package webapp
 
 import (
+	"bitbucket.org/danstutzman/wellsaid-backend/internal/app"
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
 	"crypto/tls"
 	"database/sql"
@@ -13,15 +14,18 @@ import (
 )
 
 type WebApp struct {
+	app       *app.App
 	dbConn    *sql.DB
 	staticDir string
 }
 
 func NewWebApp(
+	app *app.App,
 	dbConn *sql.DB,
 	staticDir string,
 ) *WebApp {
 	return &WebApp{
+		app:       app,
 		dbConn:    dbConn,
 		staticDir: staticDir,
 	}

@@ -37,7 +37,7 @@ sqlite3 db.sqlite3 <<EOF
   DROP TABLE IF EXISTS logs;
   CREATE TABLE logs (
     id                 INTEGER PRIMARY KEY NOT NULL,
-    browser_id         INTEGER NOT NULL,
+    user_id            INTEGER NOT NULL,
     id_on_client       INTEGER NOT NULL,
     time_on_client     INTEGER NOT NULL,
     message            TEXT NOT NULL,

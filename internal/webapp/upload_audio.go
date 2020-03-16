@@ -2,10 +2,8 @@ package webapp
 
 import (
 	"gopkg.in/guregu/null.v3"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -21,12 +19,7 @@ func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 	log.Printf("Header: %v", handler.Header)
 
-	f, err := os.OpenFile("/tmp/"+handler.Filename, os.O_WRONLY|os.O_CREATE, 0666)
-	if err != nil {
-		panic(err)
-	}
-	defer f.Close()
-	io.Copy(f, file)
+	webapp.app.PostUploadAudio(file, handler.Filename)
 
 	if browserId == 0 {
 		browserId = webapp.setBrowserTokenCookie(w, r)
