@@ -1,7 +1,7 @@
 package webapp
 
 import (
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/app"
+	"bitbucket.org/danstutzman/wellsaid-backend/internal/model"
 	"encoding/json"
 	"gopkg.in/guregu/null.v3"
 	"io/ioutil"
@@ -21,7 +21,7 @@ func (webapp *WebApp) postSync(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	var syncRequest app.SyncRequest
+	var syncRequest model.SyncRequest
 	err = json.Unmarshal(body, &syncRequest)
 	if err != nil {
 		panic(err)
@@ -30,7 +30,7 @@ func (webapp *WebApp) postSync(w http.ResponseWriter, r *http.Request) {
 	if browser == nil {
 		browser = webapp.setBrowserInCookie(w, r)
 	}
-	webapp.app.PostSync(syncRequest, browser.Id)
+	webapp.model.PostSync(syncRequest, browser.Id)
 
 	bytes := []byte("{}")
 	w.Write(bytes)

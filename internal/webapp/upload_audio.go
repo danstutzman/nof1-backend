@@ -27,7 +27,7 @@ func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 		userId := db.InsertIntoUsers(webapp.dbConn)
 		browser.UserId = null.IntFrom(userId)
 	}
-	webapp.app.PostUploadAudio(file, browser.UserId.Int64, handler.Filename)
+	webapp.model.PostUploadAudio(file, browser.UserId.Int64, handler.Filename)
 
 	bytes := "OK"
 	w.Write([]byte(bytes))

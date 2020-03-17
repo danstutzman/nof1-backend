@@ -1,4 +1,4 @@
-package app
+package model
 
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
@@ -68,9 +68,9 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func (app *App) PostSync(syncRequest SyncRequest, userId int64) {
+func (model *Model) PostSync(syncRequest SyncRequest, userId int64) {
 	for _, clientLog := range syncRequest.Logs {
-		db.InsertIntoLogs(app.dbConn,
+		db.InsertIntoLogs(model.dbConn,
 			convertClientLogToLogsRow(clientLog, userId))
 	}
 }

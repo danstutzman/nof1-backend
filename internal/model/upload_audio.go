@@ -1,4 +1,4 @@
-package app
+package model
 
 import (
 	"io"
@@ -7,8 +7,10 @@ import (
 	"strconv"
 )
 
-func (app *App) PostUploadAudio(file io.Reader, userId int64, filename string) {
-	userDir := path.Join(app.uploadDir, strconv.FormatInt(userId, 10))
+func (model *Model) PostUploadAudio(file io.Reader, userId int64,
+	filename string) {
+
+	userDir := path.Join(model.uploadDir, strconv.FormatInt(userId, 10))
 	err := os.MkdirAll(userDir, 0777)
 	if err != nil {
 		panic(err)

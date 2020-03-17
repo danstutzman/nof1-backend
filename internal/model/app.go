@@ -1,19 +1,19 @@
-package app
+package model
 
 import (
 	"database/sql"
 )
 
-type App struct {
+type Model struct {
 	dbConn    *sql.DB
 	uploadDir string
 }
 
-func NewApp(
+func NewModel(
 	dbConn *sql.DB,
 	uploadDir string,
-) *App {
-	return &App{
+) *Model {
+	return &Model{
 		dbConn:    dbConn,
 		uploadDir: uploadDir,
 	}

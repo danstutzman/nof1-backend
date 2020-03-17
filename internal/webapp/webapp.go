@@ -1,8 +1,8 @@
 package webapp
 
 import (
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/app"
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	"bitbucket.org/danstutzman/wellsaid-backend/internal/model"
 	"crypto/tls"
 	"database/sql"
 	"gopkg.in/guregu/null.v3"
@@ -14,18 +14,18 @@ import (
 )
 
 type WebApp struct {
-	app       *app.App
+	model     *model.Model
 	dbConn    *sql.DB
 	staticDir string
 }
 
 func NewWebApp(
-	app *app.App,
+	model *model.Model,
 	dbConn *sql.DB,
 	staticDir string,
 ) *WebApp {
 	return &WebApp{
-		app:       app,
+		model:     model,
 		dbConn:    dbConn,
 		staticDir: staticDir,
 	}
