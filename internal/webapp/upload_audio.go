@@ -13,12 +13,11 @@ func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 	browser := webapp.getBrowserFromCookie(r)
 
 	r.ParseMultipartForm(32 << 20)
-	file, handler, err := r.FormFile("audio_data")
-	if err != nil {
-		panic(err)
+	file, handler, fileErr := r.FormFile("audio_data")
+	if fileErr == nil {
+		defer file.Close()
+		log.Printf("Header: %v", handler.Header)
 	}
-	defer file.Close()
-	log.Printf("Header: %v", handler.Header)
 
 	if browser == nil {
 		browser = webapp.setBrowserInCookie(w, r)
@@ -27,13 +26,29 @@ func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 		userId := db.InsertIntoUsers(webapp.dbConn)
 		browser.UserId = null.IntFrom(userId)
 	}
-	webapp.model.PostUploadAudio(file, browser.UserId.Int64, handler.Filename)
 
-	bytes := "OK"
-	w.Write([]byte(bytes))
+	var bytes string
+	var status int
+	if fileErr == nil {
+		webapp.model.PostUploadAudio(file, browser.UserId.Int64, handler.Filename)
+		bytes = "OK"
+		status = http.StatusOK
+	} else if fileErr == http.ErrMissingFile {
+		bytes = "Missing file"
+		status = http.StatusBadRequest
+	} else if fileErr == http.ErrMissingBoundary {
+		bytes = fileErr.Error()
+		status = http.StatusBadRequest
+	} else if fileErr == http.ErrNotMultipart {
+		bytes = fileErr.Error()
+		status = http.StatusBadRequest
+	} else {
+		bytes = "Internal server error"
+		status = http.StatusInternalServerError
+	}
+	http.Error(w, bytes, status)
 
 	db.UpdateUserIdAndLastSeenAtOnBrowser(
 		webapp.dbConn, browser.UserId.Int64, browser.Id)
-	webapp.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
-		browser)
+	webapp.logRequest(receivedAt, r, status, len(bytes), null.String{}, browser)
 }
