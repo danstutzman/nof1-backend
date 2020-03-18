@@ -26,9 +26,9 @@ func NewRouter(webapp *WebApp) *mux.Router {
 		func(w http.ResponseWriter, r *http.Request) {
 			webapp.getStaticFile(w, r)
 		})
-	router.HandleFunc("/upload-audio",
+	router.HandleFunc("/sync-with-audio",
 		func(w http.ResponseWriter, r *http.Request) {
-			webapp.postUploadAudio(w, r)
+			webapp.postSyncWithAudio(w, r)
 		})
 	router.HandleFunc("/sync",
 		func(w http.ResponseWriter, r *http.Request) {

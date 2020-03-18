@@ -2,13 +2,16 @@ package webapp
 
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	"bitbucket.org/danstutzman/wellsaid-backend/internal/model"
+	"encoding/json"
 	"gopkg.in/guregu/null.v3"
 	"log"
 	"net/http"
 	"time"
 )
 
-func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
+func (webapp *WebApp) postSyncWithAudio(w http.ResponseWriter,
+	r *http.Request) {
 	receivedAt := time.Now().UTC()
 	browser := webapp.getBrowserFromCookie(r)
 
@@ -19,6 +22,12 @@ func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Header: %v", handler.Header)
 	}
 
+	var syncRequest model.SyncRequest
+	jsonErr := json.Unmarshal([]byte(r.FormValue("sync_request")), &syncRequest)
+	if jsonErr != nil {
+		panic(jsonErr)
+	}
+
 	if browser == nil {
 		browser = webapp.setBrowserInCookie(w, r)
 	}
@@ -26,6 +35,8 @@ func (webapp *WebApp) postUploadAudio(w http.ResponseWriter, r *http.Request) {
 		userId := db.InsertIntoUsers(webapp.dbConn)
 		browser.UserId = null.IntFrom(userId)
 	}
+
+	webapp.model.PostSync(syncRequest, browser.Id)
 
 	var bytes string
 	var status int
