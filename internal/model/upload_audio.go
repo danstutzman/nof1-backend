@@ -5,10 +5,16 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"time"
 )
 
-func (model *Model) PostUploadAudio(file io.Reader, userId int64,
-	filename string) {
+type UploadAudioResponse struct {
+	BackendUrl string `json:"backendUrl"`
+}
+
+func (model *Model) UploadAudio(file io.Reader,
+	userId int64) UploadAudioResponse {
+	filename := strconv.FormatInt(time.Now().Unix(), 10)
 
 	userDir := path.Join(model.uploadDir, strconv.FormatInt(userId, 10))
 	err := os.MkdirAll(userDir, 0777)
@@ -25,4 +31,6 @@ func (model *Model) PostUploadAudio(file io.Reader, userId int64,
 	defer f.Close()
 
 	io.Copy(f, file)
+
+	return UploadAudioResponse{BackendUrl: "/recordings/" + filename}
 }

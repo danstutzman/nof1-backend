@@ -34,6 +34,10 @@ func NewRouter(webapp *WebApp) *mux.Router {
 		func(w http.ResponseWriter, r *http.Request) {
 			webapp.postSync(w, r)
 		})
+	router.HandleFunc("/recordings/{filename}",
+		func(w http.ResponseWriter, r *http.Request) {
+			webapp.getRecording(w, r)
+		})
 	return router
 }
 
