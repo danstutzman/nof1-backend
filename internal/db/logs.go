@@ -10,7 +10,7 @@ import (
 type LogsRow struct {
 	BrowserId        int64
 	IdOnClient       int
-	TimeOnClient     int
+	TimeOnClient     float64
 	Message          string
 	ErrorName        null.String
 	ErrorMessage     null.String
@@ -36,7 +36,7 @@ func InsertIntoLogs(db *sql.DB, row LogsRow) {
 	query := fmt.Sprintf(`INSERT INTO logs
     (browser_id, id_on_client, time_on_client, message,
 		 error_name, error_message, error_stack, other_details_json)
-    VALUES (%d, %d, %d, %s,
+    VALUES (%d, %d, %f, %s,
 		 %s, %s, %s, %s)`,
 		row.BrowserId,
 		row.IdOnClient,

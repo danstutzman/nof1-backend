@@ -19,10 +19,7 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 	delete(clientLog, "id")
 
-	var timeOnClient int
-	if f, ok := clientLog["time"].(float64); ok {
-		timeOnClient = int(f)
-	}
+	timeOnClient, _ := clientLog["time"].(float64)
 	delete(clientLog, "time")
 
 	message := clientLog["message"].(string)
