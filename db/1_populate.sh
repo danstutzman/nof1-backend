@@ -18,6 +18,30 @@ sqlite3 db.sqlite3 <<EOF
   );
   CREATE UNIQUE INDEX idx_browsers_token ON browsers(token);
 
+  DROP TABLE IF EXISTS logs;
+  CREATE TABLE logs (
+    id                 INTEGER PRIMARY KEY NOT NULL,
+    browser_id         INTEGER NOT NULL,
+    id_on_client       INTEGER NOT NULL,
+    time_on_client     REAL NOT NULL,
+    message            TEXT NOT NULL,
+    error_name         TEXT,
+    error_message      TEXT,
+    error_stack        TEXT,
+    other_details_json TEXT
+  );
+
+  DROP TABLE IF EXISTS recordings;
+  CREATE TABLE recordings (
+    id                    INTEGER PRIMARY KEY NOT NULL,
+    user_id               INTEGER NOT NULL,
+    id_on_client          INTEGER NOT NULL,
+    recorded_at_on_client REAL NOT NULL,
+    uploaded_at           INTEGER NOT NULL,
+    path                  TEXT NOT NULL,
+    prompt                TEXT NOT NULL
+  );
+
   DROP TABLE IF EXISTS requests;
   CREATE TABLE requests (
     id               INTEGER PRIMARY KEY NOT NULL,
@@ -33,19 +57,6 @@ sqlite3 db.sqlite3 <<EOF
     status_code      INTEGER NOT NULL,
     size             INTEGER NOT NULL,
     error_stack      TEXT
-  );
-
-  DROP TABLE IF EXISTS logs;
-  CREATE TABLE logs (
-    id                 INTEGER PRIMARY KEY NOT NULL,
-    browser_id         INTEGER NOT NULL,
-    id_on_client       INTEGER NOT NULL,
-    time_on_client     INTEGER NOT NULL,
-    message            TEXT NOT NULL,
-    error_name         TEXT,
-    error_message      TEXT,
-    error_stack        TEXT,
-    other_details_json TEXT
   );
 
   DROP TABLE IF EXISTS users;

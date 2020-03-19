@@ -12,7 +12,7 @@ func NewRouter(a *WebApp) *mux.Router {
 	router.HandleFunc("/{prefix}.svg", a.wrap(a.getStaticFile, false))
 	router.HandleFunc("/bundle.js", a.wrap(a.getStaticFile, false))
 	router.HandleFunc("/bundle.js.map", a.wrap(a.getStaticFile, false))
-	router.HandleFunc("/sync-with-audio", a.wrap(a.postSyncWithAudio, true))
+	router.HandleFunc("/upload", a.wrap(a.postUpload, true))
 	router.HandleFunc("/sync", a.wrap(a.postSync, true))
 	router.HandleFunc("/recordings/{filename}", a.wrap(a.getRecording, false))
 	return router

@@ -24,7 +24,11 @@ func InitDb(dbPath string) *sql.DB {
 		log.Fatalf("Error from sql.Open: %s", err)
 	}
 
+	assertBrowsersHasCorrectSchema(dbConn)
+	assertLogsHasCorrectSchema(dbConn)
+	assertRecordingsHasCorrectSchema(dbConn)
 	assertRequestsHasCorrectSchema(dbConn)
+	assertUsersHasCorrectSchema(dbConn)
 
 	return dbConn
 }
