@@ -66,42 +66,30 @@ func (webapp *WebApp) logRequest(receivedAt time.Time, r *http.Request,
 	})
 }
 
-func (webapp *WebApp) getRoot(w http.ResponseWriter, r *http.Request) {
-	receivedAt := time.Now().UTC()
-	browser := webapp.getBrowserFromCookie(r)
+func (webapp *WebApp) getRoot(r *http.Request,
+	browser *db.BrowsersRow) Response {
 
 	html, err := ioutil.ReadFile(webapp.staticDir + "/index.html")
 	if os.IsNotExist(err) {
-		webapp.notFound(w, r)
-		return
+		return ErrorResponse{http.StatusNotFound}
 	} else if err != nil {
 		panic(err)
 	}
 
-	if browser == nil {
-		browser = webapp.setBrowserInCookie(w, r)
-	}
-	w.Write([]byte(html))
-
-	webapp.logRequest(receivedAt, r, http.StatusOK, len(html), null.String{},
-		browser)
+	return BytesResponse{content: html}
 }
 
-func (webapp *WebApp) getStaticFile(w http.ResponseWriter, r *http.Request) {
-	receivedAt := time.Now().UTC()
-	browser := webapp.getBrowserFromCookie(r)
+func (webapp *WebApp) getStaticFile(r *http.Request,
+	browser *db.BrowsersRow) Response {
 
 	bytes, err := ioutil.ReadFile(webapp.staticDir + r.URL.RequestURI())
 	if os.IsNotExist(err) {
-		webapp.notFound(w, r)
-		return
+		return ErrorResponse{status: http.StatusNotFound}
 	} else if err != nil {
 		panic(err)
 	}
-	w.Write([]byte(bytes))
 
-	webapp.logRequest(receivedAt, r, http.StatusOK, len(bytes), null.String{},
-		browser)
+	return BytesResponse{content: bytes}
 }
 
 func setCORSHeaders(w http.ResponseWriter) {
@@ -110,23 +98,14 @@ func setCORSHeaders(w http.ResponseWriter) {
 		"DELETE, GET, PATCH, POST, PUT")
 }
 
-func (webapp *WebApp) notFound(w http.ResponseWriter, r *http.Request) {
-	receivedAt := time.Now().UTC()
-	browser := webapp.getBrowserFromCookie(r)
+func (webapp *WebApp) notFound(r *http.Request,
+	browser *db.BrowsersRow) Response {
 
-	http.Error(w, http.StatusText(http.StatusNotFound), http.StatusNotFound)
-
-	webapp.logRequest(receivedAt, r, http.StatusNotFound,
-		len(http.StatusText(http.StatusNotFound)), null.String{}, browser)
+	return ErrorResponse{status: http.StatusNotFound}
 }
 
-func (webapp *WebApp) getWithoutTls(w http.ResponseWriter, r *http.Request) {
-	receivedAt := time.Now().UTC()
-	browser := webapp.getBrowserFromCookie(r)
+func (webapp *WebApp) getWithoutTls(r *http.Request,
+	browser *db.BrowsersRow) Response {
 
-	http.Redirect(w, r, "https://wellsaid.us"+r.RequestURI,
-		http.StatusMovedPermanently)
-
-	webapp.logRequest(receivedAt, r, http.StatusMovedPermanently, 0,
-		null.String{}, browser)
+	return RedirectResponse{url: "https://wellsaid.us" + r.RequestURI}
 }

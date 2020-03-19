@@ -5,47 +5,21 @@ import (
 	"net/http"
 )
 
-func NewRouter(webapp *WebApp) *mux.Router {
+func NewRouter(a *WebApp) *mux.Router {
 	router := mux.NewRouter()
-	router.NotFoundHandler = http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.notFound(w, r)
-		})
-	router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		webapp.getRoot(w, r)
-	})
-	router.HandleFunc("/{prefix}.mp3",
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.getStaticFile(w, r)
-		})
-	router.HandleFunc("/bundle.js",
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.getStaticFile(w, r)
-		})
-	router.HandleFunc("/bundle.js.map",
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.getStaticFile(w, r)
-		})
-	router.HandleFunc("/sync-with-audio",
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.postSyncWithAudio(w, r)
-		})
-	router.HandleFunc("/sync",
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.postSync(w, r)
-		})
-	router.HandleFunc("/recordings/{filename}",
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.getRecording(w, r)
-		})
+	router.NotFoundHandler = http.HandlerFunc(a.wrap(a.notFound, false))
+	router.HandleFunc("/", a.wrap(a.getRoot, true))
+	router.HandleFunc("/{prefix}.mp3", a.wrap(a.getStaticFile, false))
+	router.HandleFunc("/bundle.js", a.wrap(a.getStaticFile, false))
+	router.HandleFunc("/bundle.js.map", a.wrap(a.getStaticFile, false))
+	router.HandleFunc("/sync-with-audio", a.wrap(a.postSyncWithAudio, true))
+	router.HandleFunc("/sync", a.wrap(a.postSync, true))
+	router.HandleFunc("/recordings/{filename}", a.wrap(a.getRecording, false))
 	return router
 }
 
-func NewRedirectToTlsRouter(webapp *WebApp) *mux.Router {
+func NewRedirectToTlsRouter(a *WebApp) *mux.Router {
 	router := mux.NewRouter()
-	router.NotFoundHandler = http.HandlerFunc(
-		func(w http.ResponseWriter, r *http.Request) {
-			webapp.getWithoutTls(w, r)
-		})
+	router.NotFoundHandler = http.HandlerFunc(a.wrap(a.getWithoutTls, false))
 	return router
 }
