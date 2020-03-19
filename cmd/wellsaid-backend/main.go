@@ -39,17 +39,15 @@ func main() {
 
 		go func() {
 			err := http.ListenAndServeTLS(":443", httpsCertFile, httpsKeyFile,
-				webappPkg.NewRecoveryHandler(router, webapp))
+				router)
 			panic(err)
 		}()
 
-		err := http.ListenAndServe(":"+httpPort,
-			webappPkg.NewRecoveryHandler(redirectToTlsRouter, webapp))
+		err := http.ListenAndServe(":"+httpPort, redirectToTlsRouter)
 		panic(err)
 	} else {
 		log.Printf("Serving HTTP on :" + httpPort + "...")
-		err := http.ListenAndServe(":"+httpPort,
-			webappPkg.NewRecoveryHandler(router, webapp))
+		err := http.ListenAndServe(":"+httpPort, router)
 		panic(err)
 	}
 }

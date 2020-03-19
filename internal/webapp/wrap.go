@@ -3,8 +3,11 @@ package webapp
 import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
 	"encoding/json"
+	"fmt"
+	"github.com/go-errors/errors"
 	"gopkg.in/guregu/null.v3"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -93,6 +96,20 @@ func (webapp *WebApp) wrap(handler HandlerFunc,
 	return func(w http.ResponseWriter, r *http.Request) {
 		receivedAt := time.Now().UTC()
 		browser := webapp.getBrowserFromCookie(r)
+
+		defer func() {
+			if err := recover(); err != nil {
+				errorStack := errors.Wrap(err, 2).ErrorStack()
+
+				fmt.Fprintln(os.Stderr, errorStack)
+
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
+
+				webapp.logRequest(receivedAt, r, http.StatusInternalServerError,
+					len([]byte(errorStack)), null.StringFrom(errorStack), browser)
+			}
+		}()
 
 		if browser == nil && setBrowserCookie {
 			browser = webapp.setBrowserInCookie(w, r)
