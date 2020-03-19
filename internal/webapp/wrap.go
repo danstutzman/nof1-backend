@@ -37,14 +37,17 @@ func (response JsonResponse) SetHeaders(w http.ResponseWriter) {
 }
 
 type BytesResponse struct {
-	content []byte
+	content     []byte
+	contentType string
 }
 
 func (response BytesResponse) Status() int { return http.StatusOK }
 
 func (response BytesResponse) Content() []byte { return response.content }
 
-func (response BytesResponse) SetHeaders(w http.ResponseWriter) {}
+func (response BytesResponse) SetHeaders(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", response.contentType)
+}
 
 type ErrorResponse struct {
 	status int

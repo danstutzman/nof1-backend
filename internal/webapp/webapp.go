@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -81,15 +82,27 @@ func (webapp *WebApp) getRoot(r *http.Request,
 
 func (webapp *WebApp) getStaticFile(r *http.Request,
 	browser *db.BrowsersRow) Response {
+	filename := r.URL.RequestURI()
 
-	bytes, err := ioutil.ReadFile(webapp.staticDir + r.URL.RequestURI())
+	bytes, err := ioutil.ReadFile(webapp.staticDir + filename)
 	if os.IsNotExist(err) {
 		return ErrorResponse{status: http.StatusNotFound}
 	} else if err != nil {
 		panic(err)
 	}
 
-	return BytesResponse{content: bytes}
+	var contentType string
+	if strings.HasSuffix(filename, ".svg") {
+		contentType = "image/svg+xml"
+	} else if strings.HasSuffix(filename, ".js") {
+		contentType = "text/javascript"
+	} else if strings.HasSuffix(filename, ".js.map") {
+		contentType = "application/json" // so can view source in browser
+	} else {
+		panic("Unknown mime type")
+	}
+
+	return BytesResponse{content: bytes, contentType: contentType}
 }
 
 func setCORSHeaders(w http.ResponseWriter) {
