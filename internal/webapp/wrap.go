@@ -13,27 +13,36 @@ import (
 
 type Response interface {
 	Status() int
-	Content() []byte
-	SetHeaders(w http.ResponseWriter)
+	Size() int
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
 }
 
 type JsonResponse struct {
-	content interface{}
+	content      interface{}
+	contentBytes []byte
+}
+
+func (response JsonResponse) getContentBytes() []byte {
+	if len(response.contentBytes) == 0 {
+		var err error
+		response.contentBytes, err = json.Marshal(response.content)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return response.contentBytes
 }
 
 func (response JsonResponse) Status() int { return http.StatusOK }
 
-func (response JsonResponse) Content() []byte {
-	bytes, err := json.Marshal(response.content)
-	if err != nil {
-		panic(err)
-	}
-	return bytes
+func (response JsonResponse) Size() int {
+	return len(response.getContentBytes())
 }
 
-func (response JsonResponse) SetHeaders(w http.ResponseWriter) {
+func (response JsonResponse) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	setCORSHeaders(w)
 	w.Header().Set("Content-Type", "application/json; charset=\"utf-8\"")
+	w.Write(response.getContentBytes())
 }
 
 type BytesResponse struct {
@@ -43,10 +52,11 @@ type BytesResponse struct {
 
 func (response BytesResponse) Status() int { return http.StatusOK }
 
-func (response BytesResponse) Content() []byte { return response.content }
+func (response BytesResponse) Size() int { return len(response.content) }
 
-func (response BytesResponse) SetHeaders(w http.ResponseWriter) {
+func (response BytesResponse) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", response.contentType)
+	w.Write(response.content)
 }
 
 type ErrorResponse struct {
@@ -55,21 +65,30 @@ type ErrorResponse struct {
 
 func (response ErrorResponse) Status() int { return response.status }
 
-func (response ErrorResponse) Content() []byte {
+func (response ErrorResponse) Size() int { return len(response.getContent()) }
+
+func (response ErrorResponse) getContent() []byte {
 	return []byte(http.StatusText(response.status))
 }
 
-func (response ErrorResponse) SetHeaders(w http.ResponseWriter) {}
+func (response ErrorResponse) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	http.Error(w, string(response.getContent()), response.status)
+}
 
 type BadRequestResponse struct {
 	message string
 }
 
 func (response BadRequestResponse) Status() int { return http.StatusBadRequest }
-func (response BadRequestResponse) Content() []byte {
-	return []byte(response.message)
+func (response BadRequestResponse) Size() int {
+	return len([]byte(response.message))
 }
-func (response BadRequestResponse) SetHeaders(w http.ResponseWriter) {}
+
+func (response BadRequestResponse) ServeHTTP(w http.ResponseWriter,
+	r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write([]byte(response.message))
+}
 
 type RedirectResponse struct {
 	url string
@@ -78,10 +97,14 @@ type RedirectResponse struct {
 func (response RedirectResponse) Status() int {
 	return http.StatusMovedPermanently
 }
-func (response RedirectResponse) Content() []byte {
+func (response RedirectResponse) Size() int {
+	return len(response.getContent())
+}
+func (response RedirectResponse) getContent() []byte {
 	return []byte("<a href=\"" + response.url + "\">" + "Redirect" + "</a>.\n")
 }
-func (response RedirectResponse) SetHeaders(w http.ResponseWriter) {
+func (response RedirectResponse) ServeHTTP(w http.ResponseWriter,
+	r *http.Request) {
 	h := w.Header()
 
 	h.Set("Location", response.url)
@@ -89,6 +112,23 @@ func (response RedirectResponse) SetHeaders(w http.ResponseWriter) {
 	// RFC 7231 notes that a short HTML body is usually included in
 	// the response because older user agents may not understand 301/307.
 	h.Set("Content-Type", "text/html; charset=utf-8")
+
+	w.Write(response.getContent())
+}
+
+type FileResponse struct {
+	path string
+	size int
+}
+
+func (response FileResponse) Status() int {
+	return http.StatusOK
+}
+func (response FileResponse) Size() int {
+	return response.size
+}
+func (response FileResponse) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, response.path)
 }
 
 type HandlerFunc func(r *http.Request, browser *db.BrowsersRow) Response
@@ -120,11 +160,9 @@ func (webapp *WebApp) wrap(handler HandlerFunc,
 
 		response := handler(r, browser)
 
-		content := response.Content()
-		response.SetHeaders(w)
-		w.Write(content)
+		response.ServeHTTP(w, r)
 
-		webapp.logRequest(receivedAt, r, response.Status(), len(content),
+		webapp.logRequest(receivedAt, r, response.Status(), response.Size(),
 			null.String{}, browser)
 	}
 }
