@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
 	modelPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/model"
 	webappPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/webapp"
+	"github.com/NYTimes/gziphandler"
 	"log"
 	"net/http"
 	"os"
@@ -31,7 +32,7 @@ func main() {
 
 	model := modelPkg.NewModel(dbConn, "/tmp/wellsaid-backend")
 	webapp := webappPkg.NewWebApp(model, dbConn, staticDir)
-	router := webappPkg.NewRouter(webapp)
+	router := gziphandler.GzipHandler(webappPkg.NewRouter(webapp))
 	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)
 
 	if httpsCertFile != "" || httpsKeyFile != "" {
