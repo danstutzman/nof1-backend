@@ -9,6 +9,7 @@ func NewRouter(a *WebApp) *mux.Router {
 	router := mux.NewRouter()
 	router.NotFoundHandler = http.HandlerFunc(a.wrap(a.notFound, false))
 	router.HandleFunc("/", a.wrap(a.getRoot, true))
+	router.HandleFunc("/record/{prompt}", a.wrap(a.getRoot, true))
 	router.HandleFunc("/{prefix}.svg", a.wrap(a.getStaticFile, false))
 	router.HandleFunc("/bundle.js", a.wrap(a.getStaticFile, false))
 	router.HandleFunc("/bundle.js.map", a.wrap(a.getStaticFile, false))
