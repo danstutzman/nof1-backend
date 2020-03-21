@@ -4,13 +4,12 @@ import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
 	"github.com/gorilla/mux"
 	"net/http"
-	"os"
 )
 
 func (webapp *WebApp) getRecording(r *http.Request,
 	browser *db.BrowsersRow) Response {
 
-	if !browser.UserId.Valid {
+	if browser == nil || !browser.UserId.Valid {
 		return ErrorResponse{status: http.StatusUnauthorized}
 	}
 
