@@ -19,8 +19,8 @@ type UploadResponse struct {
 	BackendUrl string `json:"backendUrl"`
 }
 
-func (model *Model) Upload(request UploadRequest,
-	file io.Reader, userId int64, uploadedAt time.Time) UploadResponse {
+func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
+	uploadedAt time.Time, mimeType string) UploadResponse {
 
 	filename := strconv.FormatInt(uploadedAt.Unix(), 10)
 
@@ -38,14 +38,19 @@ func (model *Model) Upload(request UploadRequest,
 	}
 	defer f.Close()
 
-	io.Copy(f, file)
+	size, err := io.Copy(f, file)
+	if err != nil {
+		panic(err)
+	}
 
 	db.InsertIntoRecordings(model.dbConn, db.RecordingsRow{
 		UserId:             userId,
 		IdOnClient:         request.Id,
 		RecordedAtOnClient: request.RecordedAt,
 		UploadedAt:         uploadedAt,
-		Path:               path,
+		Filename:           filename,
+		MimeType:           mimeType,
+		Size:               int(size),
 		Prompt:             request.Prompt,
 	})
 

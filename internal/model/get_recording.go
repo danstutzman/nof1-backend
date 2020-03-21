@@ -1,23 +1,34 @@
 package model
 
 import (
-	"io/ioutil"
-	"os"
+	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	"fmt"
 	"path"
 	"strconv"
 )
 
-func (model *Model) GetRecording(userId int64,
-	filename string) ([]byte, error) {
+type GetRecordingResponse struct {
+	Path     string
+	MimeType string
+	Size     int
+}
 
-	userDir := path.Join(model.uploadDir, strconv.FormatInt(userId, 10))
-	err := os.MkdirAll(userDir, 0777)
-	if err != nil {
-		panic(err)
+func (model *Model) GetRecording(userId int64,
+	filename string) *GetRecordingResponse {
+
+	recordings := db.FromRecordings(model.dbConn,
+		fmt.Sprintf("WHERE user_id=%d AND filename=%s",
+			userId, db.EscapeString(filename)))
+	if len(recordings) == 0 {
+		return nil
 	}
 
-	audioPath := path.Join(userDir, filename)
+	userDir := path.Join(model.uploadDir, strconv.FormatInt(userId, 10))
+	audioPath := path.Join(userDir, recordings[0].Filename)
 
-	bytes, err := ioutil.ReadFile(audioPath)
-	return bytes, err
+	return &GetRecordingResponse{
+		Path:     audioPath,
+		MimeType: recordings[0].MimeType,
+		Size:     recordings[0].Size,
+	}
 }

@@ -117,8 +117,9 @@ func (response RedirectResponse) ServeHTTP(w http.ResponseWriter,
 }
 
 type FileResponse struct {
-	path string
-	size int
+	path     string
+	size     int
+	mimeType string
 }
 
 func (response FileResponse) Status() int {
@@ -128,6 +129,9 @@ func (response FileResponse) Size() int {
 	return response.size
 }
 func (response FileResponse) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if response.mimeType != "" {
+		w.Header().Set("Content-Type", response.mimeType)
+	}
 	http.ServeFile(w, r, response.path)
 }
 

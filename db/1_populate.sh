@@ -38,7 +38,9 @@ sqlite3 db.sqlite3 <<EOF
     id_on_client          INTEGER NOT NULL,
     recorded_at_on_client REAL NOT NULL,
     uploaded_at           INTEGER NOT NULL,
-    path                  TEXT NOT NULL,
+    filename              TEXT NOT NULL,
+    mime_type             TEXT NOT NULL,
+    size                  INTEGER NOT NULL,
     prompt                TEXT NOT NULL
   );
 

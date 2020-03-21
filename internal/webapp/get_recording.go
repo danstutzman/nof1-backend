@@ -20,13 +20,14 @@ func (webapp *WebApp) getRecording(r *http.Request,
 		return BadRequestResponse{message: "Supply filename param"}
 	}
 
-	bytes, err := webapp.model.GetRecording(browser.UserId.Int64, filename)
-
-	if os.IsNotExist(err) {
+	recording := webapp.model.GetRecording(browser.UserId.Int64, filename)
+	if recording == nil {
 		return ErrorResponse{status: http.StatusNotFound}
-	} else if err != nil {
-		panic(err)
 	}
 
-	return BytesResponse{content: bytes}
+	return FileResponse{
+		path:     recording.Path,
+		size:     recording.Size,
+		mimeType: recording.MimeType,
+	}
 }

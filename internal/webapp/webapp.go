@@ -90,7 +90,7 @@ func (webapp *WebApp) getStaticFile(r *http.Request,
 		panic(err)
 	}
 
-	return FileResponse{path: path, size: int(fileInfo.Size())}
+	return FileResponse{path: path, size: int(fileInfo.Size()), mimeType: ""}
 }
 
 func setCORSHeaders(w http.ResponseWriter) {

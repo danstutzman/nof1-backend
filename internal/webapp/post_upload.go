@@ -5,7 +5,6 @@ import (
 	"bitbucket.org/danstutzman/wellsaid-backend/internal/model"
 	"encoding/json"
 	"gopkg.in/guregu/null.v3"
-	"log"
 	"net/http"
 	"time"
 )
@@ -28,23 +27,21 @@ func (webapp *WebApp) postUpload(r *http.Request,
 
 	webapp.model.PostSync(syncRequest, browser.Id)
 
-	file, handler, err := r.FormFile("audio_data")
+	file, fileHeader, err := r.FormFile("audio_data")
 	if err == http.ErrMissingFile ||
 		err == http.ErrMissingBoundary ||
 		err == http.ErrNotMultipart {
 		return BadRequestResponse{message: "Bad audio_data param: " + err.Error()}
 	}
 	defer file.Close()
-	log.Printf("Header: %v", handler.Header)
 
 	var request model.UploadRequest
 	err = json.Unmarshal([]byte(r.FormValue("recording")), &request)
 	if err != nil {
 		return BadRequestResponse{message: "Bad recording param: " + err.Error()}
 	}
-	log.Printf("request: %+v", request)
 	content := webapp.model.Upload(request, file, browser.UserId.Int64,
-		time.Now().UTC())
+		time.Now().UTC(), fileHeader.Header.Get("Content-Type"))
 
 	db.UpdateUserIdAndLastSeenAtOnBrowser(
 		webapp.dbConn, browser.UserId.Int64, browser.Id)
