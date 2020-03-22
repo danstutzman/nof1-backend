@@ -98,9 +98,3 @@ func setCORSHeaders(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Methods",
 		"DELETE, GET, PATCH, POST, PUT")
 }
-
-func (webapp *WebApp) getWithoutTls(r *http.Request,
-	browser *db.BrowsersRow) Response {
-
-	return RedirectResponse{url: "https://wellsaid.us" + r.RequestURI}
-}
