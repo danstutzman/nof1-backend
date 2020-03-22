@@ -24,6 +24,28 @@ type RequestsRow struct {
 	ErrorStack  null.String
 }
 
+func prepareFakeRequests(db *sql.DB) {
+	_, err := db.Exec(`
+		CREATE TABLE requests (
+			id           INTEGER PRIMARY KEY NOT NULL,
+			browser_id   INTEGER,
+			http_version TEXT NOT NULL,
+			tls_protocol TEXT,
+			tls_cipher   TEXT,
+			received_at  TEXT NOT NULL,
+			remote_addr  TEXT NOT NULL,
+			method       TEXT NOT NULL,
+			path         TEXT NOT NULL,
+			duration_ms  INTEGER NOT NULL,
+			status_code  INTEGER NOT NULL,
+			size         INTEGER NOT NULL,
+			error_stack  TEXT
+		);`)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func assertRequestsHasCorrectSchema(db *sql.DB) {
 	query := `SELECT id, received_at, remote_addr, browser_id
 	    http_version, tls_protocol, tls_cipher,
@@ -78,4 +100,56 @@ func InsertIntoRequests(db *sql.DB, row RequestsRow) RequestsRow {
 	row.Id = id
 
 	return row
+}
+
+func FromRequests(db *sql.DB, whereLimit string) []RequestsRow {
+	query := `SELECT id, browser_id, http_version, tls_protocol,
+    tls_cipher, received_at, remote_addr, method, path,
+		duration_ms, status_code, size, error_stack
+    FROM requests ` + whereLimit
+	if LOG {
+		log.Println(query)
+	}
+
+	rset, err := db.Query(query)
+	if err != nil {
+		panic(err)
+	}
+	defer rset.Close()
+
+	var rows []RequestsRow
+	for rset.Next() {
+		var row RequestsRow
+		var receivedAt string
+		err = rset.Scan(&row.Id,
+			&row.BrowserId,
+			&row.HttpVersion,
+			&row.TlsProtocol,
+			&row.TlsCipher,
+			&receivedAt,
+			&row.RemoteAddr,
+			&row.Method,
+			&row.Path,
+			&row.DurationMs,
+			&row.StatusCode,
+			&row.Size,
+			&row.ErrorStack)
+		if err != nil {
+			panic(err)
+		}
+
+		row.ReceivedAt, err = time.Parse(time.RFC3339, receivedAt)
+		if err != nil {
+			panic(err)
+		}
+
+		rows = append(rows, row)
+	}
+
+	err = rset.Err()
+	if err != nil {
+		panic(err)
+	}
+
+	return rows
 }

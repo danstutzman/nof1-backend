@@ -8,5 +8,6 @@ require (
 	github.com/gorilla/handlers v1.4.2
 	github.com/gorilla/mux v1.7.4
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible
+	github.com/stretchr/testify v1.3.0
 	gopkg.in/guregu/null.v3 v3.4.0
 )
