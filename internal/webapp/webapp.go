@@ -99,12 +99,6 @@ func setCORSHeaders(w http.ResponseWriter) {
 		"DELETE, GET, PATCH, POST, PUT")
 }
 
-func (webapp *WebApp) notFound(r *http.Request,
-	browser *db.BrowsersRow) Response {
-
-	return ErrorResponse{status: http.StatusNotFound}
-}
-
 func (webapp *WebApp) getWithoutTls(r *http.Request,
 	browser *db.BrowsersRow) Response {
 
