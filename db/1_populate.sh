@@ -46,19 +46,19 @@ sqlite3 db.sqlite3 <<EOF
 
   DROP TABLE IF EXISTS requests;
   CREATE TABLE requests (
-    id               INTEGER PRIMARY KEY NOT NULL,
-    browser_id       INTEGER,
+    id           INTEGER PRIMARY KEY NOT NULL,
+    browser_id   INTEGER,
     http_version TEXT NOT NULL,
     tls_protocol TEXT,
     tls_cipher   TEXT,
-    received_at      TEXT NOT NULL,
-    remote_addr      TEXT NOT NULL,
-    method           TEXT NOT NULL,
-    path             TEXT NOT NULL,
-    duration_ms      INTEGER NOT NULL,
-    status_code      INTEGER NOT NULL,
-    size             INTEGER NOT NULL,
-    error_stack      TEXT
+    received_at  TEXT NOT NULL,
+    remote_addr  TEXT NOT NULL,
+    method       TEXT NOT NULL,
+    path         TEXT NOT NULL,
+    duration_ms  INTEGER NOT NULL,
+    status_code  INTEGER NOT NULL,
+    size         INTEGER NOT NULL,
+    error_stack  TEXT
   );
 
   DROP TABLE IF EXISTS users;
