@@ -6,7 +6,6 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"gopkg.in/guregu/null.v3"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -69,18 +68,20 @@ func (webapp *WebApp) logRequest(receivedAt time.Time, r *http.Request,
 func (webapp *WebApp) getRoot(r *http.Request,
 	browser *db.BrowsersRow) Response {
 
-	html, err := ioutil.ReadFile(webapp.staticDir + "/index.html")
+	path := webapp.staticDir + "/index.html"
+	fileInfo, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return ErrorResponse{http.StatusNotFound}
 	} else if err != nil {
 		panic(err)
 	}
 
-	return BytesResponse{content: html}
+	return FileResponse{path: path, size: int(fileInfo.Size()), mimeType: ""}
 }
 
 func (webapp *WebApp) getStaticFile(r *http.Request,
 	browser *db.BrowsersRow) Response {
+
 	path := webapp.staticDir + r.URL.RequestURI()
 
 	fileInfo, err := os.Stat(path)
