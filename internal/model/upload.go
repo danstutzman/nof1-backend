@@ -1,7 +1,7 @@
 package model
 
 import (
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	"bitbucket.org/danstutzman/nof1-backend/internal/db"
 	"io"
 	"os"
 	"path"

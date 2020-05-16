@@ -1,7 +1,7 @@
 package webapp
 
 import (
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
+	"bitbucket.org/danstutzman/nof1-backend/internal/db"
 	"encoding/json"
 	"fmt"
 	"github.com/go-errors/errors"

@@ -1,9 +1,9 @@
 package main
 
 import (
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
-	modelPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/model"
-	webappPkg "bitbucket.org/danstutzman/wellsaid-backend/internal/webapp"
+	"bitbucket.org/danstutzman/nof1-backend/internal/db"
+	modelPkg "bitbucket.org/danstutzman/nof1-backend/internal/model"
+	webappPkg "bitbucket.org/danstutzman/nof1-backend/internal/webapp"
 	"github.com/NYTimes/gziphandler"
 	"log"
 	"net/http"
@@ -30,7 +30,7 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
-	model := modelPkg.NewModel(dbConn, "/tmp/wellsaid-backend")
+	model := modelPkg.NewModel(dbConn, "/tmp/nof1-backend")
 	webapp := webappPkg.NewWebApp(model, dbConn, staticDir)
 	router := gziphandler.GzipHandler(webappPkg.NewRouter(webapp))
 	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)

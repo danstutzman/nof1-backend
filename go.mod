@@ -1,4 +1,4 @@
-module bitbucket.org/danstutzman/wellsaid-backend
+module bitbucket.org/danstutzman/nof1-backend
 
 go 1.13
 

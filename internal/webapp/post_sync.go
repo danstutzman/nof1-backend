@@ -1,8 +1,8 @@
 package webapp
 
 import (
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/db"
-	"bitbucket.org/danstutzman/wellsaid-backend/internal/model"
+	"bitbucket.org/danstutzman/nof1-backend/internal/db"
+	"bitbucket.org/danstutzman/nof1-backend/internal/model"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"

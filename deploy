@@ -5,14 +5,14 @@ go install -v ./...
 
 if [ "$IP" == "" ]; then
   if false; then
-    doctl compute droplet create wellsaid \
+    doctl compute droplet create nof1 \
       --image ubuntu-18-04-x64 --region nyc3 --size s-1vcpu-1gb \
       --ssh-keys a6:52:93:88:c5:35:fa:72:02:f0:91:24:20:65:b9:c3
   fi
 
-  IP=`doctl compute droplet list wellsaid --format PublicIPv4 --no-header`
+  IP=`doctl compute droplet list nof1 --format PublicIPv4 --no-header`
   if [ "$IP" == "" ]; then
-    echo 1>&2 "Can't find IP address for wellsaid"
+    echo 1>&2 "Can't find IP address for nof1"
     exit 1
   fi
 fi
@@ -29,75 +29,75 @@ if false; then
     add-apt-repository -y ppa:certbot/certbot
     apt-get update
     apt-get install -y certbot
-    certbot certonly --standalone --agree-tos --email dan@danstutzman.com --no-eff-email -d wellsaid.us
+    certbot certonly --standalone --agree-tos --email dan@danstutzman.com --no-eff-email -d n-of-1.club
 
-    useradd --create-home wellsaid-backend --shell /bin/bash || true
+    useradd --create-home nof1-backend --shell /bin/bash || true
 
-    mkdir -p /home/wellsaid-backend/.ssh
-    chmod 0700 /home/wellsaid-backend/.ssh
-    chown wellsaid-backend:wellsaid-backend /home/wellsaid-backend/.ssh
+    mkdir -p /home/nof1-backend/.ssh
+    chmod 0700 /home/nof1-backend/.ssh
+    chown nof1-backend:nof1-backend /home/nof1-backend/.ssh
 
-    cp /root/.ssh/authorized_keys /home/wellsaid-backend/.ssh
-    chmod 0600 /home/wellsaid-backend/.ssh/authorized_keys
-    chown wellsaid-backend:wellsaid-backend \
-      /home/wellsaid-backend/.ssh/authorized_keys
+    cp /root/.ssh/authorized_keys /home/nof1-backend/.ssh
+    chmod 0600 /home/nof1-backend/.ssh/authorized_keys
+    chown nof1-backend:nof1-backend \
+      /home/nof1-backend/.ssh/authorized_keys
 
-    GOROOT=/home/wellsaid-backend/go1.14.linux-amd64
+    GOROOT=/home/nof1-backend/go1.14.linux-amd64
     if [ ! -e $GOROOT ]; then
-      sudo -u wellsaid-backend curl \
-        -o /home/wellsaid-backend/go1.14.linux-amd64.tar.gz \
+      sudo -u nof1-backend curl \
+        -o /home/nof1-backend/go1.14.linux-amd64.tar.gz \
         https://dl.google.com/go/go1.14.linux-amd64.tar.gz
-      cd /home/wellsaid-backend
-      sudo -u wellsaid-backend tar xzf \
-        /home/wellsaid-backend/go1.14.linux-amd64.tar.gz
-      sudo -u wellsaid-backend mv go $GOROOT
+      cd /home/nof1-backend
+      sudo -u nof1-backend tar xzf \
+        /home/nof1-backend/go1.14.linux-amd64.tar.gz
+      sudo -u nof1-backend mv go $GOROOT
     fi
 
-    GOPATH=/home/wellsaid-backend/gopath
-    sudo -u wellsaid-backend mkdir -p $GOPATH
-    sudo -u wellsaid-backend mkdir -p $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend
+    GOPATH=/home/nof1-backend/gopath
+    sudo -u nof1-backend mkdir -p $GOPATH
+    sudo -u nof1-backend mkdir -p $GOPATH/src/bitbucket.org/danstutzman/nof1-backend
 
     # Install dependencies for go-sqlite3
     apt-get install -y build-essential sqlite3
 EOF
 fi
 
-time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . wellsaid-backend@$IP:/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='bundle.js' --include='bundle.js.map' --include='*/' --exclude='*' --prune-empty-dirs
+time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . nof1-backend@$IP:/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='*.svg' --include='bundle.js' --include='bundle.js.map' --include='*/' --exclude='*' --prune-empty-dirs
 
 ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
-  GOPATH=/home/wellsaid-backend/gopath
-  GOROOT=/home/wellsaid-backend/go1.14.linux-amd64
-  GOCACHE=/home/wellsaid-backend/gocache
-  cd $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend
-  chown -R wellsaid-backend:wellsaid-backend .
-  sudo -u wellsaid-backend mkdir -p $GOCACHE
-  time sudo -u wellsaid-backend \
+  GOPATH=/home/nof1-backend/gopath
+  GOROOT=/home/nof1-backend/go1.14.linux-amd64
+  GOCACHE=/home/nof1-backend/gocache
+  cd $GOPATH/src/bitbucket.org/danstutzman/nof1-backend
+  chown -R nof1-backend:nof1-backend .
+  sudo -u nof1-backend mkdir -p $GOCACHE
+  time sudo -u nof1-backend \
     GOROOT=$GOROOT GOPATH=$GOPATH GOCACHE=$GOCACHE \
     $GOROOT/bin/go install -v -race ./...
 
-  if [ ! -e /home/wellsaid-backend/db.sqlite3 ]; then
-    $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend/db/1_populate.sh
-    mv $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend/db/db.sqlite3 \
-      /home/wellsaid-backend/db.sqlite3
-    chown wellsaid-backend:wellsaid-backend /home/wellsaid-backend/db.sqlite3
+  if [ ! -e /home/nof1-backend/db.sqlite3 ]; then
+    $GOPATH/src/bitbucket.org/danstutzman/nof1-backend/db/1_populate.sh
+    mv $GOPATH/src/bitbucket.org/danstutzman/nof1-backend/db/db.sqlite3 \
+      /home/nof1-backend/db.sqlite3
+    chown nof1-backend:nof1-backend /home/nof1-backend/db.sqlite3
   fi
 
-  tee /etc/systemd/system/wellsaid-backend.service <<EOF2
+  tee /etc/systemd/system/nof1-backend.service <<EOF2
 [Unit]
-Description=wellsaid-backend service
+Description=nof1-backend service
 After=network.target
 
 [Service]
 Type=simple
 Restart=on-failure
 RestartSec=1
-WorkingDirectory=/home/wellsaid-backend
+WorkingDirectory=/home/nof1-backend
 Environment=HTTP_PORT=80
-Environment=DB_FILE=/home/wellsaid-backend/db.sqlite3
-Environment=HTTPS_CERT_FILE=/etc/letsencrypt/live/wellsaid.us/fullchain.pem
-Environment=HTTPS_KEY_FILE=/etc/letsencrypt/live/wellsaid.us/privkey.pem
-Environment=STATIC_DIR=/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend/static
-ExecStart=/home/wellsaid-backend/wellsaid-backend
+Environment=DB_FILE=/home/nof1-backend/db.sqlite3
+Environment=HTTPS_CERT_FILE=/etc/letsencrypt/live/n-of-1.club/fullchain.pem
+Environment=HTTPS_KEY_FILE=/etc/letsencrypt/live/n-of-1.club/privkey.pem
+Environment=STATIC_DIR=/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend/static
+ExecStart=/home/nof1-backend/nof1-backend
 StandardOutput=syslog
 StandardError=syslog
 
@@ -106,13 +106,13 @@ WantedBy=multi-user.target
 EOF2
   sudo systemctl daemon-reload
 
-  sudo service wellsaid-backend stop || true
-  sudo -u wellsaid-backend cp -rv $GOPATH/bin/wellsaid-backend \
-    /home/wellsaid-backend
-  setcap CAP_NET_BIND_SERVICE=+eip /home/wellsaid-backend/wellsaid-backend
-  sudo systemctl enable wellsaid-backend
-  sudo systemctl start wellsaid-backend
+  sudo service nof1-backend stop || true
+  sudo -u nof1-backend cp -rv $GOPATH/bin/nof1-backend \
+    /home/nof1-backend
+  setcap CAP_NET_BIND_SERVICE=+eip /home/nof1-backend/nof1-backend
+  sudo systemctl enable nof1-backend
+  sudo systemctl start nof1-backend
   sleep 1
 
-  curl --silent --show-error -o /dev/null https://wellsaid.us
+  curl --silent --show-error -o /dev/null https://n-of-1.club
 EOF
