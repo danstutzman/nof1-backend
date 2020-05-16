@@ -101,7 +101,7 @@ func (response RedirectResponse) Size() int {
 	return len(response.getContent())
 }
 func (response RedirectResponse) getContent() []byte {
-	return []byte("<a href=\"" + response.url + "\">" + "Redirect" + "</a>.\n")
+	return []byte("<a href=\"" + response.url + "\">" + "Please click here to be redirected." + "</a>.\n")
 }
 func (response RedirectResponse) ServeHTTP(w http.ResponseWriter,
 	r *http.Request) {
@@ -113,7 +113,7 @@ func (response RedirectResponse) ServeHTTP(w http.ResponseWriter,
 	// the response because older user agents may not understand 301/307.
 	h.Set("Content-Type", "text/html; charset=utf-8")
 
-	w.Write(response.getContent())
+	http.Error(w, string(response.getContent()), response.Status())
 }
 
 type FileResponse struct {
