@@ -56,6 +56,9 @@ if false; then
     GOPATH=/home/wellsaid-backend/gopath
     sudo -u wellsaid-backend mkdir -p $GOPATH
     sudo -u wellsaid-backend mkdir -p $GOPATH/src/bitbucket.org/danstutzman/wellsaid-backend
+
+    # Install dependencies for go-sqlite3
+    apt-get install -y build-essential sqlite3
 EOF
 fi
 
