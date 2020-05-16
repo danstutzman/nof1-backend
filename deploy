@@ -79,11 +79,6 @@ ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
     chown wellsaid-backend:wellsaid-backend /home/wellsaid-backend/db.sqlite3
   fi
 
-  if [ ! -e /home/wellsaid-backend/SECRET_KEY ]; then
-    echo 1>&2 "Please create /home/wellsaid-backend/SECRET_KEY on the server.  You can run wellsaid-backend locally without SECRET_KEY to generate an example"
-    exit 1
-  fi
-  SECRET_KEY=$(cat /home/wellsaid-backend/SECRET_KEY)
   tee /etc/systemd/system/wellsaid-backend.service <<EOF2
 [Unit]
 Description=wellsaid-backend service
@@ -99,7 +94,6 @@ Environment=DB_FILE=/home/wellsaid-backend/db.sqlite3
 Environment=HTTPS_CERT_FILE=/etc/letsencrypt/live/wellsaid.us/fullchain.pem
 Environment=HTTPS_KEY_FILE=/etc/letsencrypt/live/wellsaid.us/privkey.pem
 Environment=STATIC_DIR=/home/wellsaid-backend/gopath/src/bitbucket.org/danstutzman/wellsaid-backend/static
-Environment=SECRET_KEY=$SECRET_KEY
 ExecStart=/home/wellsaid-backend/wellsaid-backend
 StandardOutput=syslog
 StandardError=syslog
