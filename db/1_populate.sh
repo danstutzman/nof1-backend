@@ -41,7 +41,7 @@ sqlite3 db.sqlite3 <<EOF
     filename              TEXT NOT NULL,
     mime_type             TEXT NOT NULL,
     size                  INTEGER NOT NULL,
-    prompt                TEXT NOT NULL
+    metadata_json         TEXT NOT NULL
   );
 
   DROP TABLE IF EXISTS requests;

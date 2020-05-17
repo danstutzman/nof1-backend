@@ -2,6 +2,7 @@ package model
 
 import (
 	"bitbucket.org/danstutzman/nof1-backend/internal/db"
+	"encoding/json"
 	"io"
 	"os"
 	"path"
@@ -10,9 +11,9 @@ import (
 )
 
 type UploadRequest struct {
-	Id         int     `json:"id"`
-	Prompt     string  `json:"prompt"`
-	RecordedAt float64 `json:"recordedAt"`
+	Id         int         `json:"id"`
+	Metadata   interface{} `json:"metadata"`
+	RecordedAt float64     `json:"recordedAt"`
 }
 
 type UploadResponse struct {
@@ -43,6 +44,11 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 		panic(err)
 	}
 
+	metadataJson, err := json.Marshal(request.Metadata)
+	if err != nil {
+		panic(err)
+	}
+
 	db.InsertIntoRecordings(model.dbConn, db.RecordingsRow{
 		UserId:             userId,
 		IdOnClient:         request.Id,
@@ -51,7 +57,7 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 		Filename:           filename,
 		MimeType:           mimeType,
 		Size:               int(size),
-		Prompt:             request.Prompt,
+		MetadataJson:       string(metadataJson),
 	})
 
 	return UploadResponse{BackendUrl: "/recordings/" + filename}

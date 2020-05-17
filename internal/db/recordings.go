@@ -16,12 +16,12 @@ type RecordingsRow struct {
 	Filename           string
 	MimeType           string
 	Size               int
-	Prompt             string
+	MetadataJson       string
 }
 
 func assertRecordingsHasCorrectSchema(db *sql.DB) {
 	query := `SELECT id, user_id, id_on_client, recorded_at_on_client,
-		uploaded_at, filename, mime_type, size, prompt
+		uploaded_at, filename, mime_type, size, metadata_json
 	  FROM recordings LIMIT 1`
 	if LOG {
 		log.Println(query)
@@ -36,7 +36,7 @@ func assertRecordingsHasCorrectSchema(db *sql.DB) {
 func InsertIntoRecordings(db *sql.DB, row RecordingsRow) {
 	query := fmt.Sprintf(`INSERT INTO recordings
 			(user_id, id_on_client, recorded_at_on_client, uploaded_at, filename,
-			mime_type, size, prompt)
+			mime_type, size, metadata_json)
 			VALUES (%d, %d, %f, %d, %s, %s, %d, %s)`,
 		row.UserId,
 		row.IdOnClient,
@@ -45,7 +45,7 @@ func InsertIntoRecordings(db *sql.DB, row RecordingsRow) {
 		EscapeString(row.Filename),
 		EscapeString(row.MimeType),
 		row.Size,
-		EscapeString(row.Prompt))
+		EscapeString(row.MetadataJson))
 	if LOG {
 		log.Println(query)
 	}
@@ -58,7 +58,7 @@ func InsertIntoRecordings(db *sql.DB, row RecordingsRow) {
 
 func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 	query := `SELECT id, user_id, id_on_client, recorded_at_on_client,
-		uploaded_at, filename, mime_type, size, prompt
+		uploaded_at, filename, mime_type, size, metadata_json
 		FROM recordings ` + whereLimit
 	if LOG {
 		log.Println(query)
@@ -82,7 +82,7 @@ func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 			&row.Filename,
 			&row.MimeType,
 			&row.Size,
-			&row.Prompt)
+			&row.MetadataJson)
 		if err != nil {
 			panic(err)
 		}
