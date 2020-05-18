@@ -50,7 +50,7 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 	</body>
 </html>`))
 
-func (webapp *WebApp) getRecordings(r *http.Request,
+func (webapp *WebApp) getAdminRecordings(r *http.Request,
 	browser *db.BrowsersRow) Response {
 
 	data := struct {
