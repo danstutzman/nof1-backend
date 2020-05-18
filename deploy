@@ -62,7 +62,7 @@ if false; then
 EOF
 fi
 
-time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . nof1-backend@$IP:/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='*.svg' --include='bundle.js' --include='bundle.js.map' --include='*/' --exclude='*' --prune-empty-dirs
+time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . nof1-backend@$IP:/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='*.svg' --include='bundle.js' --include='bundle.js.map' --include='*/' --exclude='*' --prune-empty-dirs --delete
 
 ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
   GOPATH=/home/nof1-backend/gopath
