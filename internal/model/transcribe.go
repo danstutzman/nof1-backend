@@ -4,6 +4,7 @@ import (
 	"bitbucket.org/danstutzman/nof1-backend/internal/db"
 	"bufio"
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -130,8 +131,52 @@ func (model *Model) transcribeRecording(recording db.RecordingsRow) {
 		log.Printf("Failed to copy transcription result: %s", err)
 		return
 	}
-	log.Printf("Transcription: %s", buffer.String())
+	log.Printf("AwsTranscribeJson: %s", buffer.String())
 
 	db.UpdateAwsTranscribeJsonOnRecording(
 		model.dbConn, buffer.String(), recording.Id)
+
+	if recording.Transcript == "" {
+		db.UpdateTranscriptOnRecording(
+			model.dbConn, extractTranscriptFromJson(buffer.String()), recording.Id)
+	}
+}
+
+/* Example JSON:
+{"jobName":"2_1589833267","accountId":"553826207523","results":{"transcripts":[{"transcript":"This is the test for my"}],"items":[{"start_time":"1.74","end_time":"1.97","alternatives":[{"confidence":"1.0","content":"This"}],"type":"pronunciation"},{"start_time":"1.97","end_time":"2.11","alternatives":[{"confidence":"1.0","content":"is"}],"type":"pronunciation"},{"start_time":"2.11","end_time":"2.2","alternatives":[{"confidence":"0.9274","content":"the"}],"type":"pronunciation"},{"start_time":"2.2","end_time":"2.66","alternatives":[{"confidence":"1.0","content":"test"}],"type":"pronunciation"},{"start_time":"2.66","end_time":"2.76","alternatives":[{"confidence":"0.7689","content":"for"}],"type":"pronunciation"},{"start_time":"2.76","end_time":"3.02","alternatives":[{"confidence":"0.9595","content":"my"}],"type":"pronunciation"}]},"status":"COMPLETED"}
+*/
+
+func extractTranscriptFromJson(s string) string {
+	var m map[string]interface{}
+	err := json.Unmarshal([]byte(s), &m)
+	if err != nil {
+		log.Printf("Can't unmarshal JSON: %s", s)
+		return ""
+	}
+
+	results, ok := m["results"].(map[string]interface{})
+	if !ok {
+		log.Printf("Can't get .results")
+		return ""
+	}
+
+	transcripts, ok := results["transcripts"].([]interface{})
+	if !ok {
+		log.Printf("Can't get .results.transcripts")
+		return ""
+	}
+
+	transcripts0 := transcripts[0].(map[string]interface{})
+	if !ok {
+		log.Printf("Can't get .results.transcripts[0]")
+		return ""
+	}
+
+	transcript, ok := transcripts0["transcript"].(string)
+	if !ok {
+		log.Printf("Can't get .results.transcripts[0].transcript")
+		return ""
+	}
+
+	return transcript
 }
