@@ -62,7 +62,7 @@ if false; then
 EOF
 fi
 
-time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . nof1-backend@$IP:/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='*.svg' --include='bundle.js' --include='bundle.js.map' --include='*/' --exclude='*' --prune-empty-dirs --delete
+time rsync -a -e "ssh -C -i ~/.ssh/digitalocean" -r . nof1-backend@$IP:/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend --include='*.go' --include='go.mod' --include='go.sum' --include='*.sh' --include='*.mp3' --include='*.html' --include='*.svg' --include='bundle.js' --include='bundle.js.map' --include='*/' --include='nof1-backend.service' --exclude='*' --prune-empty-dirs --delete
 
 ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
   GOPATH=/home/nof1-backend/gopath
@@ -82,31 +82,8 @@ ssh -i ~/.ssh/digitalocean root@$IP 'bash -exs' <<"EOF"
     chown nof1-backend:nof1-backend /home/nof1-backend/db.sqlite3
   fi
 
-  ADMIN_PASSWORD=$(cat /home/nof1-backend/ADMIN_PASSWORD)
-
-  tee /etc/systemd/system/nof1-backend.service <<EOF2
-[Unit]
-Description=nof1-backend service
-After=network.target
-
-[Service]
-Type=simple
-Restart=on-failure
-RestartSec=1
-WorkingDirectory=/home/nof1-backend
-Environment=ADMIN_PASSWORD=$ADMIN_PASSWORD
-Environment=HTTP_PORT=80
-Environment=DB_FILE=/home/nof1-backend/db.sqlite3
-Environment=HTTPS_CERT_FILE=/etc/letsencrypt/live/n-of-1.club/fullchain.pem
-Environment=HTTPS_KEY_FILE=/etc/letsencrypt/live/n-of-1.club/privkey.pem
-Environment=STATIC_DIR=/home/nof1-backend/gopath/src/bitbucket.org/danstutzman/nof1-backend/static
-ExecStart=/home/nof1-backend/nof1-backend
-StandardOutput=syslog
-StandardError=syslog
-
-[Install]
-WantedBy=multi-user.target
-EOF2
+  cp $GOPATH/src/bitbucket.org/danstutzman/nof1-backend/nof1-backend.service \
+    /etc/systemd/system/nof1-backend.service
   sudo systemctl daemon-reload
 
   sudo service nof1-backend stop || true

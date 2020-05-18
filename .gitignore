@@ -1,3 +1,4 @@
 /db/db.sqlite3
 /static
 .*.swp
+/nof1-backend.service
