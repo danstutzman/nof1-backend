@@ -35,7 +35,34 @@ func main() {
 		log.Fatalf("Set ADMIN_PASSWORD env var")
 	}
 
-	model := modelPkg.NewModel(dbConn, "/tmp/nof1-backend")
+	awsAccessKeyId := os.Getenv("AWS_ACCESS_KEY_ID")
+	if awsAccessKeyId == "" {
+		log.Fatalf("Set AWS_ACCESS_KEY_ID env var")
+	}
+
+	awsRegion := os.Getenv("AWS_REGION")
+	if awsRegion == "" {
+		log.Fatalf("Set AWS_REGION env var")
+	}
+
+	awsS3Bucket := os.Getenv("AWS_S3_BUCKET")
+	if awsS3Bucket == "" {
+		log.Fatalf("Set AWS_S3_BUCKET env var")
+	}
+
+	awsSecretAccessKey := os.Getenv("AWS_SECRET_ACCESS_KEY")
+	if awsSecretAccessKey == "" {
+		log.Fatalf("Set AWS_SECRET_ACCESS_KEY env var")
+	}
+
+	model := modelPkg.NewModel(modelPkg.Config{
+		AwsAccessKeyId:     awsAccessKeyId,
+		AwsRegion:          awsRegion,
+		AwsS3Bucket:        awsS3Bucket,
+		AwsSecretAccessKey: awsSecretAccessKey,
+		DbConn:             dbConn,
+		UploadDir:          "/tmp/nof1-backend",
+	})
 	webapp := webappPkg.NewWebApp(model, dbConn, staticDir, adminPassword)
 	router := gziphandler.GzipHandler(webappPkg.NewRouter(webapp))
 	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)

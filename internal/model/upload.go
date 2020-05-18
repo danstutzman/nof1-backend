@@ -49,7 +49,7 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 		panic(err)
 	}
 
-	db.InsertIntoRecordings(model.dbConn, db.RecordingsRow{
+	recording := db.InsertIntoRecordings(model.dbConn, db.RecordingsRow{
 		UserId:             userId,
 		IdOnClient:         request.Id,
 		RecordedAtOnClient: request.RecordedAt,
@@ -59,6 +59,8 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 		Size:               int(size),
 		MetadataJson:       string(metadataJson),
 	})
+
+	go model.transcribeRecording(recording)
 
 	return UploadResponse{BackendUrl: "/recordings/" + filename}
 }

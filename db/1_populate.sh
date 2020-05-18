@@ -42,7 +42,8 @@ sqlite3 db.sqlite3 <<EOF
     mime_type             TEXT NOT NULL,
     size                  INTEGER NOT NULL,
     metadata_json         TEXT NOT NULL,
-    transcript            TEXT
+    transcript            TEXT,
+    aws_transcribe_json   TEXT
   );
 
   DROP TABLE IF EXISTS requests;

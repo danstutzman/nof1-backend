@@ -20,8 +20,15 @@ type Fixtures struct {
 
 func setupFixtures() *Fixtures {
 	dbConn := db.PrepareFakeDb()
-	model := model.NewModel(dbConn, "UPLOAD_DIR")
-	webapp := NewWebApp(model, dbConn, "STATIC_DIR", "password")
+	model := model.NewModel(model.Config{
+		AwsAccessKeyId:     "fakeaccesskeyid",
+		AwsRegion:          "fakeregion",
+		AwsS3Bucket:        "fakebucket",
+		AwsSecretAccessKey: "fakesecret",
+		DbConn:             dbConn,
+		UploadDir:          "UPLOAD_DIR",
+	})
+	webapp := NewWebApp(model, dbConn, "STATIC_DIR", "fakepassword")
 	router := NewRouter(webapp)
 	server := httptest.NewServer(router)
 

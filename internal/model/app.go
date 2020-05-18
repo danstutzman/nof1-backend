@@ -5,16 +5,30 @@ import (
 )
 
 type Model struct {
-	dbConn    *sql.DB
-	uploadDir string
+	awsAccessKeyId     string
+	awsRegion          string
+	awsS3Bucket        string
+	awsSecretAccessKey string
+	dbConn             *sql.DB
+	uploadDir          string
 }
 
-func NewModel(
-	dbConn *sql.DB,
-	uploadDir string,
-) *Model {
+type Config struct {
+	AwsAccessKeyId     string
+	AwsRegion          string
+	AwsS3Bucket        string
+	AwsSecretAccessKey string
+	DbConn             *sql.DB
+	UploadDir          string
+}
+
+func NewModel(config Config) *Model {
 	return &Model{
-		dbConn:    dbConn,
-		uploadDir: uploadDir,
+		awsAccessKeyId:     config.AwsAccessKeyId,
+		awsRegion:          config.AwsRegion,
+		awsS3Bucket:        config.AwsS3Bucket,
+		awsSecretAccessKey: config.AwsSecretAccessKey,
+		dbConn:             config.DbConn,
+		uploadDir:          config.UploadDir,
 	}
 }
