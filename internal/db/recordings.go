@@ -17,11 +17,12 @@ type RecordingsRow struct {
 	MimeType           string
 	Size               int
 	MetadataJson       string
+	Transcript         string
 }
 
 func assertRecordingsHasCorrectSchema(db *sql.DB) {
 	query := `SELECT id, user_id, id_on_client, recorded_at_on_client,
-		uploaded_at, filename, mime_type, size, metadata_json
+		uploaded_at, filename, mime_type, size, metadata_json, transcript
 	  FROM recordings LIMIT 1`
 	if LOG {
 		log.Println(query)
@@ -36,8 +37,8 @@ func assertRecordingsHasCorrectSchema(db *sql.DB) {
 func InsertIntoRecordings(db *sql.DB, row RecordingsRow) {
 	query := fmt.Sprintf(`INSERT INTO recordings
 			(user_id, id_on_client, recorded_at_on_client, uploaded_at, filename,
-			mime_type, size, metadata_json)
-			VALUES (%d, %d, %f, %d, %s, %s, %d, %s)`,
+			mime_type, size, metadata_json, transcript)
+			VALUES (%d, %d, %f, %d, %s, %s, %d, %s, %s)`,
 		row.UserId,
 		row.IdOnClient,
 		row.RecordedAtOnClient,
@@ -45,7 +46,8 @@ func InsertIntoRecordings(db *sql.DB, row RecordingsRow) {
 		EscapeString(row.Filename),
 		EscapeString(row.MimeType),
 		row.Size,
-		EscapeString(row.MetadataJson))
+		EscapeString(row.MetadataJson),
+		EscapeString(row.Transcript))
 	if LOG {
 		log.Println(query)
 	}
@@ -58,7 +60,7 @@ func InsertIntoRecordings(db *sql.DB, row RecordingsRow) {
 
 func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 	query := `SELECT id, user_id, id_on_client, recorded_at_on_client,
-		uploaded_at, filename, mime_type, size, metadata_json
+		uploaded_at, filename, mime_type, size, metadata_json, transcript
 		FROM recordings ` + whereLimit
 	if LOG {
 		log.Println(query)
@@ -82,7 +84,8 @@ func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 			&row.Filename,
 			&row.MimeType,
 			&row.Size,
-			&row.MetadataJson)
+			&row.MetadataJson,
+			&row.Transcript)
 		if err != nil {
 			panic(err)
 		}
@@ -98,4 +101,18 @@ func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 	}
 
 	return rows
+}
+
+func UpdateTranscriptOnRecording(db *sql.DB, transcript string,
+	recordingId int64) {
+
+	query := "UPDATE recordings SET transcript = $1 WHERE id = $2"
+	if LOG {
+		log.Println(query)
+	}
+
+	_, err := db.Exec(query, transcript, recordingId)
+	if err != nil {
+		panic(err)
+	}
 }

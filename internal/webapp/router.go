@@ -16,8 +16,20 @@ func NewRouter(a *WebApp) *mux.Router {
 	router.HandleFunc("/upload", a.wrap(a.postUpload, true))
 	router.HandleFunc("/sync", a.wrap(a.postSync, true))
 	router.HandleFunc("/recordings/{filename}", a.wrap(a.getRecording, false))
-	router.HandleFunc("/admin/recordings",
-		basicAuth(a.wrap(a.getAdminRecordings, false), "admin", a.adminPassword))
+
+	router.HandleFunc(
+		"/admin/recordings",
+		basicAuth(a.wrap(a.getAdminRecordings, false), "admin", a.adminPassword),
+	).Methods("GET")
+
+	router.HandleFunc(
+		"/admin/recordings",
+		basicAuth(a.wrap(a.postAdminRecordings, false), "admin", a.adminPassword),
+	).Methods("POST")
+
+	router.HandleFunc("/admin/recordings/{userId}/{filename}",
+		basicAuth(a.wrap(a.getAdminRecording, false), "admin", a.adminPassword))
+
 	return router
 }
 
