@@ -13,20 +13,23 @@ import (
 )
 
 type WebApp struct {
-	model     *model.Model
-	dbConn    *sql.DB
-	staticDir string
+	model         *model.Model
+	dbConn        *sql.DB
+	staticDir     string
+	adminPassword string
 }
 
 func NewWebApp(
 	model *model.Model,
 	dbConn *sql.DB,
 	staticDir string,
+	adminPassword string,
 ) *WebApp {
 	return &WebApp{
-		model:     model,
-		dbConn:    dbConn,
-		staticDir: staticDir,
+		model:         model,
+		dbConn:        dbConn,
+		staticDir:     staticDir,
+		adminPassword: adminPassword,
 	}
 }
 

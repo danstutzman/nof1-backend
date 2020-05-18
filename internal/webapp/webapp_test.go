@@ -21,7 +21,7 @@ type Fixtures struct {
 func setupFixtures() *Fixtures {
 	dbConn := db.PrepareFakeDb()
 	model := model.NewModel(dbConn, "UPLOAD_DIR")
-	webapp := NewWebApp(model, dbConn, "STATIC_DIR")
+	webapp := NewWebApp(model, dbConn, "STATIC_DIR", "password")
 	router := NewRouter(webapp)
 	server := httptest.NewServer(router)
 

@@ -30,8 +30,13 @@ func main() {
 		log.Fatalf("Set STATIC_DIR env var")
 	}
 
+	adminPassword := os.Getenv("ADMIN_PASSWORD")
+	if adminPassword == "" {
+		log.Fatalf("Set ADMIN_PASSWORD env var")
+	}
+
 	model := modelPkg.NewModel(dbConn, "/tmp/nof1-backend")
-	webapp := webappPkg.NewWebApp(model, dbConn, staticDir)
+	webapp := webappPkg.NewWebApp(model, dbConn, staticDir, adminPassword)
 	router := gziphandler.GzipHandler(webappPkg.NewRouter(webapp))
 	redirectToTlsRouter := webappPkg.NewRedirectToTlsRouter(webapp)
 

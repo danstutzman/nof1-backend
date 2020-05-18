@@ -53,10 +53,6 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 func (webapp *WebApp) getRecordings(r *http.Request,
 	browser *db.BrowsersRow) Response {
 
-	if browser == nil || !browser.UserId.Valid {
-		return ErrorResponse{status: http.StatusUnauthorized}
-	}
-
 	data := struct {
 		Recordings []db.RecordingsRow
 	}{
