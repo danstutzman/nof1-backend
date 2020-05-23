@@ -18,6 +18,7 @@ type UploadRequest struct {
 
 type UploadResponse struct {
 	BackendUrl string `json:"backendUrl"`
+	Timestamp  string `json:"timestamp"`
 }
 
 func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
@@ -62,5 +63,8 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 
 	go model.transcribeRecording(recording)
 
-	return UploadResponse{BackendUrl: "/recordings/" + filename}
+	return UploadResponse{
+		BackendUrl: "/recordings/" + filename,
+		Timestamp:  getTimestamp(),
+	}
 }

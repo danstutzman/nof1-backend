@@ -10,6 +10,10 @@ type SyncRequest struct {
 	Logs []map[string]interface{} `json:"logs"`
 }
 
+type SyncResponse struct {
+	Timestamp string `json:"Timestamp"`
+}
+
 func convertClientLogToLogsRow(clientLog map[string]interface{},
 	browserId int64) db.LogsRow {
 
@@ -65,9 +69,13 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func (model *Model) PostSync(syncRequest SyncRequest, userId int64) {
+func (model *Model) PostSync(syncRequest SyncRequest,
+	userId int64) SyncResponse {
+
 	for _, clientLog := range syncRequest.Logs {
 		db.InsertIntoLogs(model.dbConn,
 			convertClientLogToLogsRow(clientLog, userId))
 	}
+
+	return SyncResponse{Timestamp: getTimestamp()}
 }

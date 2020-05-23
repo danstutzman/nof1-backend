@@ -40,11 +40,12 @@ func (webapp *WebApp) postUpload(r *http.Request,
 	if err != nil {
 		return BadRequestResponse{message: "Bad recording param: " + err.Error()}
 	}
-	content := webapp.model.Upload(request, file, browser.UserId.Int64,
+
+	response := webapp.model.Upload(request, file, browser.UserId.Int64,
 		time.Now().UTC(), fileHeader.Header.Get("Content-Type"))
 
 	db.UpdateUserIdAndLastSeenAtOnBrowser(
 		webapp.dbConn, browser.UserId.Int64, browser.Id)
 
-	return JsonResponse{content: content}
+	return JsonResponse{content: response}
 }
