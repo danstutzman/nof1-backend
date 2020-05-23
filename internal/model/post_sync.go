@@ -3,25 +3,28 @@ package model
 import (
 	"bitbucket.org/danstutzman/nof1-backend/internal/db"
 	"encoding/json"
+	"fmt"
 	"gopkg.in/guregu/null.v3"
 )
 
 type SyncRequest struct {
-	Logs []map[string]interface{} `json:"logs"`
+	Logs         []map[string]interface{} `json:"logs"`
+	LastUpdateId int                      `json:"lastUpdateId"`
+	Updates      []db.UpdatesRow          `json:"updates"`
 }
 
 type SyncResponse struct {
-	Timestamp string `json:"Timestamp"`
+	Updates []db.UpdatesRow `json:"updates"`
 }
 
 func convertClientLogToLogsRow(clientLog map[string]interface{},
 	browserId int64) db.LogsRow {
 
 	var idOnClient int
-	if f, ok := clientLog["id"].(float64); ok {
+	if f, ok := clientLog["idOnClient"].(float64); ok {
 		idOnClient = int(f)
 	}
-	delete(clientLog, "id")
+	delete(clientLog, "idOnClient")
 
 	timeOnClient, _ := clientLog["time"].(float64)
 	delete(clientLog, "time")
@@ -69,13 +72,20 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
-func (model *Model) PostSync(syncRequest SyncRequest,
+func (model *Model) PostSync(request SyncRequest,
 	userId int64) SyncResponse {
 
-	for _, clientLog := range syncRequest.Logs {
+	for _, clientLog := range request.Logs {
 		db.InsertIntoLogs(model.dbConn,
 			convertClientLogToLogsRow(clientLog, userId))
 	}
 
-	return SyncResponse{Timestamp: getTimestamp()}
+	for _, update := range request.Updates {
+		db.InsertIntoUpdates(model.dbConn, update)
+	}
+
+	updates := db.FromUpdates(model.dbConn,
+		fmt.Sprintf("WHERE id > %d", request.LastUpdateId))
+
+	return SyncResponse{Updates: updates}
 }

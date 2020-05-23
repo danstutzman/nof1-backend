@@ -46,6 +46,16 @@ sqlite3 db.sqlite3 <<EOF
     aws_transcribe_json   TEXT
   );
 
+  DROP TABLE IF EXISTS updates;
+  CREATE TABLE updates (
+    id            INTEGER PRIMARY KEY NOT NULL,
+    table_name    TEXT NOT NULL,
+    row_id        INTEGER NOT NULL,
+    column_name   TEXT NOT NULL,
+    new_value     TEXT NOT NULL,
+    updated_at    INTEGER NOT NULL
+  );
+
   DROP TABLE IF EXISTS requests;
   CREATE TABLE requests (
     id           INTEGER PRIMARY KEY NOT NULL,

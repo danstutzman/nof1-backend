@@ -137,8 +137,17 @@ func (model *Model) transcribeRecording(recording db.RecordingsRow) {
 		model.dbConn, buffer.String(), recording.Id)
 
 	if recording.Transcript == "" {
-		db.UpdateTranscriptOnRecording(
-			model.dbConn, extractTranscriptFromJson(buffer.String()), recording.Id)
+		transcript := extractTranscriptFromJson(buffer.String())
+
+		db.UpdateTranscriptOnRecording(model.dbConn, transcript, recording.Id)
+
+		db.InsertIntoUpdates(model.dbConn, db.UpdatesRow{
+			TableName:  "recordings",
+			RowId:      recording.Id,
+			ColumnName: "transcript",
+			NewValue:   transcript,
+			UpdatedAt:  time.Now().UTC(),
+		})
 	}
 }
 

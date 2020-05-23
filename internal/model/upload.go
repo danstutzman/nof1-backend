@@ -11,14 +11,15 @@ import (
 )
 
 type UploadRequest struct {
-	Id         int         `json:"id"`
-	Metadata   interface{} `json:"metadata"`
-	RecordedAt float64     `json:"recordedAt"`
+	IdOnClient   int         `json:"idOnClient"`
+	Metadata     interface{} `json:"metadata"`
+	RecordedAt   float64     `json:"recordedAt"`
+	LastUpdateId int         `json:"lastUpdateId"`
 }
 
 type UploadResponse struct {
-	BackendUrl string `json:"backendUrl"`
-	Timestamp  string `json:"timestamp"`
+	BackendUrl  string `json:"backendUrl"`
+	RecordingId int64  `json:"recordingId"`
 }
 
 func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
@@ -52,7 +53,7 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 
 	recording := db.InsertIntoRecordings(model.dbConn, db.RecordingsRow{
 		UserId:             userId,
-		IdOnClient:         request.Id,
+		IdOnClient:         request.IdOnClient,
 		RecordedAtOnClient: request.RecordedAt,
 		UploadedAt:         uploadedAt,
 		Filename:           filename,
@@ -64,7 +65,7 @@ func (model *Model) Upload(request UploadRequest, file io.Reader, userId int64,
 	go model.transcribeRecording(recording)
 
 	return UploadResponse{
-		BackendUrl: "/recordings/" + filename,
-		Timestamp:  getTimestamp(),
+		BackendUrl:  "/recordings/" + filename,
+		RecordingId: recording.Id,
 	}
 }
