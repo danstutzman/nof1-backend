@@ -9,12 +9,6 @@ import (
 	"time"
 )
 
-type CombinedResponse struct {
-	Updates     []db.UpdatesRow `json:"updates"`
-	BackendUrl  string          `json:"backendUrl"`
-	RecordingId int64           `json:"recordingId"`
-}
-
 func (webapp *WebApp) postUpload(r *http.Request,
 	browser *db.BrowsersRow) Response {
 
@@ -24,14 +18,6 @@ func (webapp *WebApp) postUpload(r *http.Request,
 	}
 
 	r.ParseMultipartForm(32 << 20)
-
-	var syncRequest model.SyncRequest
-	err := json.Unmarshal([]byte(r.FormValue("sync_request")), &syncRequest)
-	if err != nil {
-		return BadRequestResponse{message: err.Error()}
-	}
-
-	syncResponse := webapp.model.PostSync(syncRequest, browser.Id)
 
 	file, fileHeader, err := r.FormFile("audio_data")
 	if err == http.ErrMissingFile ||
@@ -47,17 +33,11 @@ func (webapp *WebApp) postUpload(r *http.Request,
 		return BadRequestResponse{message: "Bad recording param: " + err.Error()}
 	}
 
-	uploadResponse := webapp.model.Upload(request, file, browser.UserId.Int64,
+	content := webapp.model.Upload(request, file, browser.UserId.Int64,
 		time.Now().UTC(), fileHeader.Header.Get("Content-Type"))
 
 	db.UpdateUserIdAndLastSeenAtOnBrowser(
 		webapp.dbConn, browser.UserId.Int64, browser.Id)
 
-	combinedResponse := CombinedResponse{
-		Updates:     syncResponse.Updates,
-		BackendUrl:  uploadResponse.BackendUrl,
-		RecordingId: uploadResponse.RecordingId,
-	}
-
-	return JsonResponse{content: combinedResponse}
+	return JsonResponse{content: content}
 }
