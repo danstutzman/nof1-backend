@@ -15,10 +15,11 @@ func (webapp *WebApp) postAdminRecordings(r *http.Request,
 	}
 
 	for _, recording := range webapp.model.GetRecordings() {
-		newTranscript := r.FormValue(fmt.Sprintf("%d.transcript", recording.Id))
-		if newTranscript != recording.Transcript {
-			recording.Transcript = newTranscript
-			webapp.model.UpdateTranscriptOnRecording(recording)
+		newTranscriptManual := r.FormValue(
+			fmt.Sprintf("%d.transcriptManual", recording.Id))
+		if newTranscriptManual != recording.TranscriptManual {
+			recording.TranscriptManual = newTranscriptManual
+			webapp.model.UpdateTranscriptManualOnRecording(recording)
 		}
 	}
 

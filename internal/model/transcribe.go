@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/transcribeservice"
+	"gopkg.in/guregu/null.v3"
 	"io"
 	"log"
 	"net/http"
@@ -133,22 +134,16 @@ func (model *Model) transcribeRecording(recording db.RecordingsRow) {
 	}
 	log.Printf("AwsTranscribeJson: %s", buffer.String())
 
-	db.UpdateAwsTranscribeJsonOnRecording(
-		model.dbConn, buffer.String(), recording.Id)
+	transcriptAws := extractTranscriptFromJson(buffer.String())
 
-	if recording.Transcript == "" {
-		transcript := extractTranscriptFromJson(buffer.String())
+	db.UpdateTranscriptAwsOnRecording(
+		model.dbConn, transcriptAws, buffer.String(), recording.Id)
 
-		db.UpdateTranscriptOnRecording(model.dbConn, transcript, recording.Id)
-
-		db.InsertIntoUpdates(model.dbConn, db.UpdatesRow{
-			TableName:  "recordings",
-			RowId:      recording.Id,
-			ColumnName: "transcript",
-			NewValue:   transcript,
-			UpdatedAt:  time.Now().UTC(),
-		})
-	}
+	db.InsertIntoDeltas(model.dbConn, db.DeltasRow{
+		Type:          "UpdateRecordingTranscriptAws",
+		RecordingId:   null.IntFrom(recording.Id),
+		TranscriptAws: null.StringFrom(transcriptAws),
+	})
 }
 
 /* Example JSON:

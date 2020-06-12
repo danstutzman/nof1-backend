@@ -4,7 +4,8 @@ import (
 	"bitbucket.org/danstutzman/nof1-backend/internal/db"
 )
 
-func (model *Model) UpdateTranscriptOnRecording(recording db.RecordingsRow) {
-	db.UpdateTranscriptOnRecording(model.dbConn,
-		recording.Transcript, recording.Id)
+func (model *Model) UpdateTranscriptManualOnRecording(
+	recording db.RecordingsRow) {
+	db.UpdateTranscriptManualOnRecording(model.dbConn,
+		recording.TranscriptManual, recording.Id)
 }

@@ -42,18 +42,20 @@ sqlite3 db.sqlite3 <<EOF
     mime_type             TEXT NOT NULL,
     size                  INTEGER NOT NULL,
     metadata_json         TEXT NOT NULL,
-    transcript            TEXT,
+    transcript_aws        TEXT,
+    transcript_manual     TEXT,
     aws_transcribe_json   TEXT
   );
 
-  DROP TABLE IF EXISTS updates;
-  CREATE TABLE updates (
-    id            INTEGER PRIMARY KEY NOT NULL,
-    table_name    TEXT NOT NULL,
-    row_id        INTEGER NOT NULL,
-    column_name   TEXT NOT NULL,
-    new_value     TEXT NOT NULL,
-    updated_at    INTEGER NOT NULL
+  DROP TABLE IF EXISTS deltas;
+  CREATE TABLE deltas (
+    id                INTEGER PRIMARY KEY NOT NULL,
+    type              TEXT NOT NULL,
+    id_on_client      INTEGER,
+    time_on_client    REAL,
+    recording_id      INTEGER,
+    transcript_aws    TEXT,
+    transcript_manual TEXT
   );
 
   DROP TABLE IF EXISTS requests;

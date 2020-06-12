@@ -17,14 +17,15 @@ type RecordingsRow struct {
 	MimeType           string
 	Size               int
 	MetadataJson       string
-	Transcript         string
+	TranscriptAws      string
+	TranscriptManual   string
 	AwsTranscribeJson  string
 }
 
 func assertRecordingsHasCorrectSchema(db *sql.DB) {
 	query := `SELECT id, user_id, id_on_client, recorded_at_on_client,
-		uploaded_at, filename, mime_type, size, metadata_json, transcript,
-		aws_transcribe_json
+		uploaded_at, filename, mime_type, size, metadata_json, transcript_aws,
+		transcript_manual, aws_transcribe_json
 	  FROM recordings LIMIT 1`
 	if LOG {
 		log.Println(query)
@@ -39,8 +40,9 @@ func assertRecordingsHasCorrectSchema(db *sql.DB) {
 func InsertIntoRecordings(db *sql.DB, row RecordingsRow) RecordingsRow {
 	query := fmt.Sprintf(`INSERT INTO recordings
 			(user_id, id_on_client, recorded_at_on_client, uploaded_at, filename,
-			mime_type, size, metadata_json, transcript, aws_transcribe_json)
-			VALUES (%d, %d, %f, %d, %s, %s, %d, %s, %s, %s)`,
+			mime_type, size, metadata_json, transcript_aws, transcript_manual,
+			aws_transcribe_json)
+			VALUES (%d, %d, %f, %d, %s, %s, %d, %s, %s, %s, %s)`,
 		row.UserId,
 		row.IdOnClient,
 		row.RecordedAtOnClient,
@@ -49,7 +51,8 @@ func InsertIntoRecordings(db *sql.DB, row RecordingsRow) RecordingsRow {
 		EscapeString(row.MimeType),
 		row.Size,
 		EscapeString(row.MetadataJson),
-		EscapeString(row.Transcript),
+		EscapeString(row.TranscriptAws),
+		EscapeString(row.TranscriptManual),
 		EscapeString(row.AwsTranscribeJson))
 	if LOG {
 		log.Println(query)
@@ -70,8 +73,8 @@ func InsertIntoRecordings(db *sql.DB, row RecordingsRow) RecordingsRow {
 
 func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 	query := `SELECT id, user_id, id_on_client, recorded_at_on_client,
-		uploaded_at, filename, mime_type, size, metadata_json, transcript,
-		aws_transcribe_json
+		uploaded_at, filename, mime_type, size, metadata_json, transcript_aws,
+		transcript_manual, aws_transcribe_json
 		FROM recordings ` + whereLimit
 	if LOG {
 		log.Println(query)
@@ -96,7 +99,8 @@ func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 			&row.MimeType,
 			&row.Size,
 			&row.MetadataJson,
-			&row.Transcript,
+			&row.TranscriptAws,
+			&row.TranscriptManual,
 			&row.AwsTranscribeJson)
 		if err != nil {
 			panic(err)
@@ -115,29 +119,31 @@ func FromRecordings(db *sql.DB, whereLimit string) []RecordingsRow {
 	return rows
 }
 
-func UpdateTranscriptOnRecording(db *sql.DB, transcript string,
+func UpdateTranscriptManualOnRecording(db *sql.DB, transcriptManual string,
 	recordingId int64) {
 
-	query := "UPDATE recordings SET transcript = $1 WHERE id = $2"
+	query := "UPDATE recordings SET transcript_manual = $1 WHERE id = $2"
 	if LOG {
 		log.Println(query)
 	}
 
-	_, err := db.Exec(query, transcript, recordingId)
+	_, err := db.Exec(query, transcriptManual, recordingId)
 	if err != nil {
 		panic(err)
 	}
 }
 
-func UpdateAwsTranscribeJsonOnRecording(db *sql.DB, awsTranscribeJson string,
-	recordingId int64) {
+func UpdateTranscriptAwsOnRecording(db *sql.DB, transcriptAws string,
+	awsTranscribeJson string, recordingId int64) {
 
-	query := "UPDATE recordings SET aws_transcribe_json = $1 WHERE id = $2"
+	query := `UPDATE recordings
+		SET transcript_aws = $1, aws_transcribe_json = $2
+		WHERE id = $3`
 	if LOG {
 		log.Println(query)
 	}
 
-	_, err := db.Exec(query, awsTranscribeJson, recordingId)
+	_, err := db.Exec(query, transcriptAws, awsTranscribeJson, recordingId)
 	if err != nil {
 		panic(err)
 	}
