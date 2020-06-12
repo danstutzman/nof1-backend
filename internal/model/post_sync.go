@@ -2,41 +2,42 @@ package model
 
 import (
 	"bitbucket.org/danstutzman/nof1-backend/internal/db"
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"gopkg.in/guregu/null.v3"
 )
 
 type SyncRequest struct {
-	Logs         []map[string]interface{} `json:"logs"`
-	LastUpdateId int                      `json:"lastUpdateId"`
-	Updates      []db.UpdatesRow          `json:"updates"`
+	SyncedUntilDeltaId int64                    `json:"syncedUntilDeltaId"`
+	Deltas             []map[string]interface{} `json:"deltas"`
 }
 
 type SyncResponse struct {
-	Updates []db.UpdatesRow `json:"updates"`
+	SyncedUntilDeltaId int64          `json:"syncedUntilDeltaId"`
+	Deltas             []db.DeltasRow `json:"deltas"`
 }
 
-func convertClientLogToLogsRow(clientLog map[string]interface{},
+func convertDeltaToLogsRow(delta map[string]interface{},
 	browserId int64) db.LogsRow {
 
 	var idOnClient int
-	if f, ok := clientLog["idOnClient"].(float64); ok {
+	if f, ok := delta["idOnClient"].(float64); ok {
 		idOnClient = int(f)
 	}
-	delete(clientLog, "idOnClient")
+	delete(delta, "idOnClient")
 
-	timeOnClient, _ := clientLog["time"].(float64)
-	delete(clientLog, "time")
+	timeOnClient, _ := delta["time"].(float64)
+	delete(delta, "time")
 
-	message := clientLog["message"].(string)
-	delete(clientLog, "message")
+	message := delta["message"].(string)
+	delete(delta, "message")
 
 	var errorName null.String
 	var errorMessage null.String
 	var errorStack null.String
-	if clientLog["error"] != nil {
-		if errorMap, ok := clientLog["error"].(map[string]interface{}); ok {
+	if delta["error"] != nil {
+		if errorMap, ok := delta["error"].(map[string]interface{}); ok {
 			if s, ok := errorMap["name"].(string); ok {
 				errorName = null.StringFrom(s)
 			}
@@ -46,14 +47,14 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 			if s, ok := errorMap["stack"].(string); ok {
 				errorStack = null.StringFrom(s)
 			}
-			delete(clientLog, "error")
-			delete(clientLog, "error")
+			delete(delta, "error")
+			delete(delta, "error")
 		}
 	}
 
 	var otherDetailsJson null.String
-	if len(clientLog) > 0 {
-		json, err := json.Marshal(clientLog)
+	if len(delta) > 0 {
+		json, err := json.Marshal(delta)
 		if err != nil {
 			panic(err)
 		}
@@ -72,20 +73,75 @@ func convertClientLogToLogsRow(clientLog map[string]interface{},
 	}
 }
 
+func handleDeltaTypeLog(dbConn *sql.DB, delta map[string]interface{},
+	browserId int64) {
+
+	db.InsertIntoLogs(dbConn, convertDeltaToLogsRow(delta, browserId))
+}
+
+func handleDeltaTypeUpdateRecordingTranscriptManual(dbConn *sql.DB,
+	delta map[string]interface{}) (int64, error) {
+
+	idOnClient, ok := delta["id"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("Couldn't convert id to float64")
+	}
+
+	timeOnClient, ok := delta["time"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("Couldn't convert timeOnClient to float64")
+	}
+
+	transcriptManual, ok := delta["transcriptManual"].(string)
+	if !ok {
+		return 0, fmt.Errorf("Couldn't convert transcriptManual to string")
+	}
+
+	recordingIdOnServer, ok := delta["recordingIdOnServer"].(float64)
+	if !ok {
+		return 0, fmt.Errorf("Couldn't convert recordingIdOnServer to float64")
+	}
+
+	db.UpdateTranscriptManualOnRecording(
+		dbConn, transcriptManual, int64(recordingIdOnServer))
+
+	newDelta := db.InsertIntoDeltas(dbConn, db.DeltasRow{
+		Type:             db.DELTA_TYPE_UPDATE_RECORDING_TRANSCRIPT_MANUAL,
+		IdOnClient:       null.IntFrom(int64(idOnClient)),
+		TimeOnClient:     null.FloatFrom(timeOnClient),
+		RecordingId:      null.IntFrom(int64(recordingIdOnServer)),
+		TranscriptManual: null.StringFrom(transcriptManual),
+	})
+
+	return newDelta.Id, nil
+}
+
 func (model *Model) PostSync(request SyncRequest,
-	userId int64) SyncResponse {
+	browserId int64) (*SyncResponse, error) {
 
-	for _, clientLog := range request.Logs {
-		db.InsertIntoLogs(model.dbConn,
-			convertClientLogToLogsRow(clientLog, userId))
+	newSyncedUntilDeltaId := request.SyncedUntilDeltaId
+
+	deltas := db.FromDeltas(model.dbConn,
+		fmt.Sprintf("WHERE id > %d", request.SyncedUntilDeltaId))
+
+	for _, delta := range request.Deltas {
+		switch delta["type"] {
+		case db.DELTA_TYPE_LOG:
+			handleDeltaTypeLog(model.dbConn, delta, browserId)
+		case db.DELTA_TYPE_UPDATE_RECORDING_TRANSCRIPT_MANUAL:
+			newDeltaId, err :=
+				handleDeltaTypeUpdateRecordingTranscriptManual(model.dbConn, delta)
+			if err != nil {
+				return nil, err
+			}
+			newSyncedUntilDeltaId = newDeltaId
+		default:
+			return nil, fmt.Errorf("Unexpected delta type on %+v", delta)
+		}
 	}
 
-	for _, update := range request.Updates {
-		db.InsertIntoUpdates(model.dbConn, update)
-	}
-
-	updates := db.FromUpdates(model.dbConn,
-		fmt.Sprintf("WHERE id > %d", request.LastUpdateId))
-
-	return SyncResponse{Updates: updates}
+	return &SyncResponse{
+		SyncedUntilDeltaId: newSyncedUntilDeltaId,
+		Deltas:             deltas,
+	}, nil
 }

@@ -54,3 +54,11 @@ func EscapeNullInt(i null.Int) string {
 
 	return strconv.FormatInt(i.Int64, 10)
 }
+
+func EscapeNullFloat(f null.Float) string {
+	if !f.Valid {
+		return "NULL"
+	}
+
+	return strconv.FormatFloat(f.Float64, 'f', -1, 64)
+}

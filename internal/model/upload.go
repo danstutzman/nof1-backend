@@ -11,7 +11,7 @@ import (
 )
 
 type UploadRequest struct {
-	IdOnClient   int         `json:"idOnClient"`
+	IdOnClient   int         `json:"id"`
 	Metadata     interface{} `json:"metadata"`
 	RecordedAt   float64     `json:"recordedAt"`
 	LastUpdateId int         `json:"lastUpdateId"`
