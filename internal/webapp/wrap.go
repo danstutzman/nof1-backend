@@ -97,7 +97,7 @@ func (response BadRequestResponse) Size() int {
 func (response BadRequestResponse) ServeHTTP(w http.ResponseWriter,
 	r *http.Request) http.Header {
 	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte(response.message))
+	http.Error(w, response.message, http.StatusBadRequest)
 	return w.Header()
 }
 

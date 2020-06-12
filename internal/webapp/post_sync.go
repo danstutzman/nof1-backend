@@ -23,7 +23,11 @@ func (webapp *WebApp) postSync(r *http.Request,
 		panic(err)
 	}
 
-	response := webapp.model.PostSync(syncRequest, browser.Id)
+	response, err := webapp.model.PostSync(syncRequest, browser.Id)
 
-	return JsonResponse{content: response}
+	if err == nil {
+		return JsonResponse{content: response}
+	} else {
+		return BadRequestResponse{message: err.Error()}
+	}
 }
