@@ -31,7 +31,8 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 					<th>IdOnClient</th>
 					<th>UploadedAt</th>
 					<th>Play</th>
-					<th>Transcript</th>
+					<th>TranscriptAws</th>
+					<th>TranscriptManual</th>
 				</tr>
 				{{range .Recordings}}
 					<tr>
@@ -45,8 +46,10 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 									type='{{.MimeType}}' />
 							</audio>
 						</td>
+						<td>{{.TranscriptAws}}</td>
 						<td>
-							<input name='{{.Id}}.transcript' value='{{.Transcript}}' />
+							<input name='{{.Id}}.transcriptManual'
+								value='{{.TranscriptManual}}' />
 						</td>
 					</tr>
 				{{end}}
