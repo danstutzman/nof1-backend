@@ -22,10 +22,10 @@ func convertDeltaToLogsRow(delta map[string]interface{},
 	browserId int64) db.LogsRow {
 
 	var idOnClient int
-	if f, ok := delta["idOnClient"].(float64); ok {
+	if f, ok := delta["id"].(float64); ok {
 		idOnClient = int(f)
 	}
-	delete(delta, "idOnClient")
+	delete(delta, "id")
 
 	timeOnClient, _ := delta["time"].(float64)
 	delete(delta, "time")
