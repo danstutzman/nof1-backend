@@ -21,6 +21,8 @@ type SyncResponse struct {
 func convertDeltaToLogsRow(delta map[string]interface{},
 	browserId int64) db.LogsRow {
 
+	delete(delta, "type")
+
 	var idOnClient int
 	if f, ok := delta["id"].(float64); ok {
 		idOnClient = int(f)
