@@ -94,6 +94,20 @@ func (model *Model) transcribeRecording(recording db.RecordingsRow) {
 		}
 
 		if *result.TranscriptionJob.TranscriptionJobStatus != "IN_PROGRESS" {
+			if result.TranscriptionJob.Transcript == nil ||
+				result.TranscriptionJob.Transcript.TranscriptFileUri == nil {
+
+				resultJson, err := json.Marshal(result)
+				if err != nil {
+					log.Printf("Failed to serialize transcript result: %+v", result)
+					return
+				}
+
+				db.UpdateTranscriptAwsOnRecording(
+					model.dbConn, "", string(resultJson), recording.Id)
+				return
+			}
+
 			transcriptUri = *result.TranscriptionJob.Transcript.TranscriptFileUri
 			break
 		}
