@@ -8,12 +8,20 @@ import (
 	"time"
 )
 
-var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
-	"formatTimestamp": func(secondsSinceEpoch float64) string {
-		return time.Unix(int64(secondsSinceEpoch), 0).Format(
-			"2006-01-02 15:04:05 UTC")
-	},
-}).Parse(`<html>
+func formatTimestamp(secondsSinceEpoch float64) string {
+	return time.Unix(int64(secondsSinceEpoch), 0).Format(
+		"2006-01-02 15:04:05 UTC")
+}
+
+func formatToMountainTime(date time.Time) string {
+	location, err := time.LoadLocation("America/Denver")
+	if err != nil {
+		panic(err)
+	}
+	return date.In(location).Format("15:04")
+}
+
+const TEMPLATE = `<html>
 	<head>
 		<style>
 			body { font-family: sans-serif; }
@@ -29,7 +37,7 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 					<th>Id</th>
 					<th>UserId</th>
 					<th>IdOnClient</th>
-					<th>UploadedAt</th>
+					<th>UploadedAt<br/>(Mountain Time)</th>
 					<th>Play</th>
 					<th>TranscriptAws</th>
 					<th>TranscriptManual</th>
@@ -39,7 +47,7 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 						<td>{{.Id}}</td>
 						<td>{{.UserId}}</td>
 						<td>{{.IdOnClient}}</td>
-						<td>{{.UploadedAt}}</td>
+						<td>{{formatToMountainTime .UploadedAt}}</td>
 						<td>
 							<audio controls>
 								<source src='/admin/recordings/{{.UserId}}//{{.Filename}}'
@@ -58,7 +66,12 @@ var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
 			<input type='submit' value='Save' />
 		</form>
 	</body>
-</html>`))
+</html>`
+
+var t = template.Must(template.New("recordings").Funcs(template.FuncMap{
+	"formatTimestamp":      formatTimestamp,
+	"formatToMountainTime": formatToMountainTime,
+}).Parse(TEMPLATE))
 
 func (webapp *WebApp) getAdminRecordings(r *http.Request,
 	browser *db.BrowsersRow) Response {
